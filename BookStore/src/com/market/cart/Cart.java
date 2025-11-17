@@ -14,7 +14,9 @@ public class Cart implements CartInterface {
 	}
 
 	public void printBookList(ArrayList<Book> booklist) {
-
+		System.out.println("----------------------------------------------------------------");
+		System.out.println("ID | 도서명 | 가격 | 저자 | 설명 | 분야 | 출판일");
+		System.out.println("----------------------------------------------------------------");
 		for (int i = 0; i < booklist.size(); i++) {
 			Book bookitem = booklist.get(i);
 			System.out.print(bookitem.getBookId() + " | ");
@@ -26,6 +28,7 @@ public class Cart implements CartInterface {
 			System.out.print(bookitem.getReleaseDate());
 			System.out.println(" ");
 		}
+		System.out.println("----------------------------------------------------------------");
 	}
 
 	public void insertBook(Book book) {
@@ -42,14 +45,14 @@ public class Cart implements CartInterface {
 	public void printCart() {
         System.out.println("장바구니 상품 목록 : ");
         System.out.println("----------------------------------------------------------------");
-        System.out.println("         도서ID \t :          수량 \t:                합계");
+        System.out.println("         도서ID \t :          수량 \t:                합계");
 
 
-		for (int i = 0; i < mCartItem.size(); i++) { // 13
-			System.out.print("    " + mCartItem.get(i).getBookID() + " \t| ");
-			System.out.print("    " + mCartItem.get(i).getQuantity() + " \t| ");
-			System.out.print("    " + mCartItem.get(i).getTotalPrice());
-			System.out.println("  ");
+		for (int i = 0; i < mCartItem.size(); i++) { 
+			System.out.print("    " + mCartItem.get(i).getBookID() + " \t| ");
+			System.out.print("    " + mCartItem.get(i).getQuantity() + " \t| ");
+			System.out.print("    " + mCartItem.get(i).getTotalPrice());
+			System.out.println("  ");
 		}
 
         System.out.println("----------------------------------------------------------------");
@@ -72,4 +75,21 @@ public class Cart implements CartInterface {
 		mCartItem.remove(numId);
 		mCartCount = mCartItem.size();
 	}
+	
+	// 추가된 기능: 장바구니 항목 인덱스 찾기
+	public int getCartItemIndex(String bookId) {
+        for (int i = 0; i < mCartItem.size(); i++) {
+            if (bookId.equals(mCartItem.get(i).getBookID())) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+	// 추가된 기능: 장바구니 항목 수량 변경
+	public void setCartItemQuantity(int index, int quantity) {
+        if (index >= 0 && index < mCartItem.size()) {
+            mCartItem.get(index).setQuantity(quantity);
+        }
+    }
 }
