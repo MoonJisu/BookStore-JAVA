@@ -328,8 +328,6 @@ public class Welcome {
         for (int i = 0; i < mCart.mCartItem.size(); i++)
             sum += mCart.mCartItem.get(i).getTotalPrice();
 
-        System.out.println("\t\t\t주문 총금액: " + sum + "원\n");
-        System.out.println("----------------------------------------------");
         System.out.println();
     }
 

@@ -56,6 +56,8 @@ public class Cart implements CartInterface {
 		}
 
         System.out.println("----------------------------------------------------------------");
+		System.out.println("\t\t\t\t총액: " + getCartTotal() + "원");
+		System.out.println("----------------------------------------------------------------");	
 	}
 
 	public boolean isCartInBook(String bookId) {
@@ -69,6 +71,15 @@ public class Cart implements CartInterface {
 		}
 		return flag;
 	}
+	
+	public int getCartTotal() {
+		int total = 0;
+		for (CartItem item : mCartItem) {
+			total += item.getTotalPrice();
+		}
+		return total;
+	}
+
 
 	public void removeCart(int numId) {
 
