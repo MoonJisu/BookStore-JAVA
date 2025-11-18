@@ -311,7 +311,6 @@ public class Welcome {
         // 주문 완료 처리 및 장바구니 자동 비우기
         mCart.deleteBook(); 
         isOrderPlaced = false; 
-        System.out.println("장바구니가 비워졌으며, 주문 상태가 초기화되었습니다.");
     }
 
     public static void printBill(String name, String phone, String address) {
