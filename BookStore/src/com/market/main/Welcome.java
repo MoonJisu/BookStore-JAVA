@@ -1,108 +1,131 @@
 package com.market.main;
 
 import java.util.Scanner;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.ArrayList;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+import com.market.util.DBConnection;
+
 import com.market.bookitem.Book;
 import com.market.cart.Cart;
+import com.market.cart.CartItem;
 import com.market.exception.CartException;
 import com.market.member.Admin;
 import com.market.member.User;
 
 public class Welcome {
+	static final int NUM_BOOK = 3;
+	static final int NUM_ITEM = 7;
+	static Cart mCart = new Cart();
+	static User mUser;
+	
+	static String ordererName = "";
+	static String ordererPhone = "";
+	static String deliveryAddress = "";
+	static boolean isOrderPlaced = false; // 주문 완료 여부 확인용
+	
+	static int currentUserId = 0;
+    static boolean isCouponApplied = false; 
+    static int finalTotalPrice = 0;         
 
-    static final int NUM_BOOK = 3;
-    static final int NUM_ITEM = 7;
-    static Cart mCart = new Cart();
-    static User mUser;
-    
-    // 주문 정보를 저장할 전역 변수
-    static String ordererName = "";
-    static String ordererPhone = "";
-    static String deliveryAddress = "";
-    static boolean isOrderPlaced = false;
+    // [추가] 장바구니가 비워진 후에도 영수증을 출력하기 위해 마지막 주문 정보를 저장할 리스트
+    static ArrayList<CartItem> lastOrderCartItems = new ArrayList<>();
 
-    public static void main(String[] args) {
-        ArrayList<Book> mBookList;
-        int mTotalBook = 0;
+	public static void main(String[] args) {
+		ArrayList<Book> mBookList;
+		int mTotalBook = 0;
 
+        try (Connection conn = DBConnection.getConnection()) {
+            System.out.println("데이터베이스 연결 성공!");
+        } catch (SQLException e) {
+            System.out.println("데이터베이스 연결 실패: " + e.getMessage());
+            System.out.println("프로그램을 종료합니다.");
+            return;
+        }
+        
         Scanner input = new Scanner(System.in);
         System.out.print("당신의 이름을 입력하세요: ");
         String userName = input.next();
 
         System.out.print("연락처를 입력하세요: ");
-        int userMobile = input.nextInt(); 
-
+        int userMobile = input.nextInt();
+        input.nextLine(); 
+        
         mUser = new User(userName, userMobile);
-
+        
+        loginOrRegisterUser(mUser); 
+        
         String greeting = "Welcome to Shopping Mall";
         String tagline = "Welcome to Book Market!";
-
+        
         boolean quit = false;
-
         while (!quit) {
-            System.out.println("***********************************************");
-            System.out.println("\t" + greeting);
-            System.out.println("\t" + tagline);
+        	System.out.println("***********************************************");
+        	System.out.println("\t" + greeting);
+        	System.out.println("\t" + tagline);
+        	
+        	menuIntroduction();
 
-            menuIntroduction();
+        	try {
+        		System.out.print("메뉴 번호를 선택해주세요: ");
+        		int n = input.nextInt();
+                input.nextLine(); 
 
-            try {
-                System.out.print("메뉴 번호를 선택해주세요: ");
-                int n = input.nextInt();
-
-                // 메뉴 번호가 1부터 10까지 가능하도록 변경
-                if (n < 1 || n > 10) {
-                    System.out.println("1부터 10까지의 숫자를 입력하세요.");
-                } else {
-                    switch (n) {
-                        case 1:
-                            menuGuestInfo(userName, userMobile); // 1. 고객 정보 확인하기
-                            break;
-                        case 2:
-                            menuCartItemList(); // 2. 장바구니 상품 목록 보기
-                            break;
-                        case 3:
-                            menuCartClear(); // 3. 장바구니 비우기
-                            break;
-                        case 4:
-                            mTotalBook = totalFileToBookList();
-                            mBookList = new ArrayList<Book>();
-                            menuCartAddItem(mBookList); // 4. 장바구니에 항목 추가하기
-                            break;
-                        case 5:
-                            menuCartEditQuantity(); // 5. 장바구니 수량 변경하기
-                            break;
-                        case 6:
-                            menuCartRemoveItem(); // 6. 장바구니 항목 삭제
-                            break;
-                        case 7:
-                            menuOrder(); // 7. 주문하기 (주문 정보 입력)
-                            break;
-                        case 8:
-                            menuCartBill(); // 8. 영수증 보기 (주문 내역 보기 및 장바구니 비우기)
-                            break;
-                        case 9:
-                            menuAdminLogin(); // 9. 관리자 로그인
-                            break;
-                        case 10:
-                            menuExit(); // 10. 종료
-                            quit = true;
-                            break;
-                    }
-                }
-            } catch (CartException e) {
-                System.out.println(e.getMessage());
-            } catch (Exception e) {
-                System.out.println("올바르지 않은 메뉴 선택으로 종료합니다.");
-                input.nextLine(); // 버퍼 비우기
+				if (n < 1 || n > 10) {
+					System.out.println("1부터 10까지의 숫자를 입력하세요.");
+				} else {
+					switch (n) {
+					case 1:
+						menuGuestInfo(userName, userMobile); 
+						break;
+					case 2:
+						menuCartItemList(); 
+						break;	
+					case 3:
+						menuCartClear(); 
+						break;
+					case 4:
+						mTotalBook = totalDBToBookList();
+						mBookList = new ArrayList<Book>();
+						menuCartAddItem(mBookList); 
+						break;
+					case 5:
+						menuCartEditQuantity(); 
+						break;
+					case 6:
+						menuCartRemoveItem(); 
+						break;	
+					case 7:
+						menuOrder(); // [핵심] 여기서 주문/결제/DB저장 모두 수행
+						break;
+					case 8:
+						menuCartBill(); // [핵심] 여기서는 내역 조회만 수행
+						break;
+					case 9:
+						menuAdminLogin(); 
+						break;
+					case 10:
+						menuExit(); 
+						quit = true;
+						break;	
+					}				
+				}
+        	} catch (CartException e) {
+        		System.out.println(e.getMessage());
+        	} catch (SQLException e) {
+                System.out.println("데이터베이스 처리 중 오류 발생: " + e.getMessage());
+        	} catch (Exception e) {
+        		System.out.println("올바르지 않은 메뉴 선택 또는 입력 오류로 종료합니다.");
+        		input.nextLine(); 
                 quit = true;
-            }
+            } 
         }
     }
 
@@ -113,13 +136,17 @@ public class Welcome {
         System.out.println(" 3. 장바구니 비우기 \t8. 영수증 보기");
         System.out.println(" 4. 장바구니에 항목 추가하기 \t9. 관리자 로그인");
         System.out.println(" 5. 장바구니 수량 변경하기\t10. 종료");
-        System.out.println(" ");
         System.out.println("****************************************************");
     }
 
     public static void menuGuestInfo(String name, int mobile) {
         System.out.println("현재 고객 정보:");
         System.out.println("이름: " + mUser.getName() + "  연락처: " + mUser.getPhone());
+        if(checkCoupon(currentUserId)) {
+            System.out.println("보유 쿠폰: [첫 구매 감사 10% 할인 쿠폰]");
+        } else {
+            System.out.println("보유 쿠폰: 없음");
+        }
     }
 
     public static void menuCartItemList() {
@@ -146,14 +173,19 @@ public class Welcome {
     }
 
     public static void menuCartAddItem(ArrayList<Book> booklist) {
-        BookList(booklist);
-        mCart.printBookList(booklist);
+        try {
+            setDBToBookList(booklist);
+            mCart.printBookList(booklist);
+        } catch (SQLException e) {
+            System.out.println("도서 목록 로딩 실패: " + e.getMessage());
+            return;
+        }
 
         boolean quit = false;
+        Scanner input = new Scanner(System.in);
 
         while (!quit) {
             System.out.print("장바구니에 추가할 도서의 ID를 입력하세요: ");
-            Scanner input = new Scanner(System.in);
             String str = input.nextLine();
 
             boolean flag = false;
@@ -184,7 +216,6 @@ public class Welcome {
         }
     }
     
-    // 메뉴 5. 장바구니 항목 수량 변경 기능
     public static void menuCartEditQuantity() throws CartException {
         if (mCart.mCartCount == 0)
             throw new CartException("장바구니에 항목이 없습니다.");
@@ -247,7 +278,7 @@ public class Welcome {
                 boolean flag = false;
                 int numId = -1;
 
-                for (int i = 0; i < mCart.mCartCount; i++) {
+                for (int i = 0; i < mCart.mCartItem.size(); i++) {
                     if (str.equals(mCart.mCartItem.get(i).getBookID())) {
                         numId = i;
                         flag = true;
@@ -271,8 +302,8 @@ public class Welcome {
         }
     }
     
-    // 메뉴 7. 주문하기 기능
-    public static void menuOrder() throws CartException {
+    // [수정됨] 주문 프로세스 전체 처리 (DB 저장, 쿠폰 사용, 장바구니 비우기)
+    public static void menuOrder() throws CartException, SQLException {
         if (mCart.mCartCount == 0)
             throw new CartException("장바구니에 항목이 없습니다. 주문할 수 없습니다.");
             
@@ -296,102 +327,237 @@ public class Welcome {
             deliveryAddress = input.nextLine();
         }
         
-        isOrderPlaced = true;
-        System.out.println("\n주문 정보가 성공적으로 입력되었습니다. (8. 영수증 보기 메뉴를 통해 확인 가능)");
+        // === 쿠폰 적용 로직 ===
+        int total = mCart.getCartTotal();
+        isCouponApplied = false;
+        finalTotalPrice = total;
+
+        if (checkCoupon(currentUserId)) {
+            System.out.println("\n🎉 10% 할인 쿠폰을 가지고 계십니다! 🎉");
+            System.out.print("쿠폰을 이번 주문에 사용하시겠습니까? (Y/N): ");
+            String answer = input.nextLine();
+            
+            if (answer.equalsIgnoreCase("Y")) {
+                int discount = (int)(total * 0.1);
+                finalTotalPrice = total - discount; 
+                isCouponApplied = true;
+                System.out.println(">> 쿠폰이 적용되었습니다. (할인액: " + discount + "원)");
+            }
+        }
+        
+        System.out.println(">> 최종 결제 금액: " + finalTotalPrice + "원");
+        System.out.print("이대로 주문을 확정하시겠습니까? (Y/N): ");
+        String confirm = input.nextLine();
+
+        if(confirm.equalsIgnoreCase("Y")) {
+             // 1. 주문 정보 DB 저장
+            try {
+                insertOrderToDB();
+                
+                // 2. 쿠폰 사용 처리
+                if (isCouponApplied) {
+                    useCoupon(currentUserId);
+                    System.out.println(">> 쿠폰이 사용 처리(소멸)되었습니다.");
+                }
+
+                // 3. 첫 구매 쿠폰 발급
+                checkAndGrantFirstOrderCoupon(currentUserId);
+                
+                // 4. 영수증 출력을 위해 현재 장바구니 내용을 백업 (복사)
+                lastOrderCartItems = new ArrayList<>(mCart.mCartItem);
+
+                // 5. 장바구니 비우기 및 상태 업데이트
+                mCart.deleteBook(); 
+                isOrderPlaced = true; 
+                System.out.println("✅ 주문이 성공적으로 완료되었습니다! (8. 영수증 보기에서 내역 확인 가능)");
+
+            } catch (SQLException e) {
+                System.out.println("❌ 주문 처리 중 오류 발생: " + e.getMessage());
+            }
+        } else {
+            System.out.println("주문이 취소되었습니다.");
+        }
     }
     
-    // 메뉴 8. 영수증 보기 기능 (주문 후 자동 장바구니 비움 포함)
+    // [수정됨] 단순히 저장된 주문 내역(영수증)만 출력하는 역할 (Read-Only)
     public static void menuCartBill() throws CartException {
         if (!isOrderPlaced)
-             throw new CartException("먼저 7. 주문하기 메뉴에서 주문 정보를 입력해야 합니다.");
+             throw new CartException("최근 완료된 주문 내역이 없습니다. 먼저 7번 메뉴로 주문해주세요.");
              
         System.out.println("--------------- 주문 영수증 ----------------");
-        printBill(ordererName, ordererPhone, deliveryAddress);
-        
-        // 주문 완료 처리 및 장바구니 자동 비우기
-        mCart.deleteBook(); 
-        isOrderPlaced = false; 
+        printBill(ordererName, ordererPhone, deliveryAddress, finalTotalPrice);
     }
 
-    public static void printBill(String name, String phone, String address) {
+    // [수정됨] Cart 객체 대신 백업해둔 리스트(lastOrderCartItems)를 사용해 출력
+    public static void printBill(String name, String phone, String address, int finalPrice) {
         Date date = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
         String strDate = formatter.format(date);
 
         System.out.println();
         System.out.println("---------------배송받을 고객정보----------------");
-        System.out.println("고객명: " + name + "   \t연락처: " + phone);
-        System.out.println("배송지: " + address + "   \t발송일: " + strDate);
-        mCart.printCart();
+        System.out.println("고객명: " + name + "   \t연락처: " + phone);
+        System.out.println("배송지: " + address + "   \t발송일: " + strDate);
+        
+        System.out.println("주문 상품 목록 : ");
+        System.out.println("----------------------------------------------------------------");
+        System.out.println("         도서ID \t :          수량 \t:                합계");
+        
+        // 백업해둔 리스트 사용
+        for (CartItem item : lastOrderCartItems) {
+			System.out.print("    " + item.getBookID() + " \t| ");
+			System.out.print("    " + item.getQuantity() + " \t| ");
+			System.out.print("    " + item.getTotalPrice());
+			System.out.println("  ");
+        }
+        System.out.println("----------------------------------------------------------------");
 
-        int sum = 0;
-        for (int i = 0; i < mCart.mCartItem.size(); i++)
-            sum += mCart.mCartItem.get(i).getTotalPrice();
-
+        System.out.println("\t\t\t\t최종 결제 금액: " + finalPrice + "원\n");
+        System.out.println("----------------------------------------------");
         System.out.println();
+    } 
+
+    // ==============================================================
+    // 쿠폰 관련 JDBC 메서드들
+    // ==============================================================
+
+    public static boolean checkCoupon(int userId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String sql = "SELECT coupon_available FROM users WHERE user_id = ?";
+        boolean hasCoupon = false;
+
+        try {
+            conn = DBConnection.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, userId);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                hasCoupon = rs.getInt(1) == 1;
+            }
+        } catch (SQLException e) {
+            System.out.println("쿠폰 확인 중 오류: " + e.getMessage());
+        } finally {
+             DBConnection.closeConnection(conn);
+        }
+        return hasCoupon;
     }
 
-    public static int totalFileToBookList() {
+    public static void useCoupon(int userId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        String sql = "UPDATE users SET coupon_available = 0 WHERE user_id = ?";
+
         try {
-            FileReader fr = new FileReader("Book.txt");
-            BufferedReader reader = new BufferedReader(fr);
+            conn = DBConnection.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, userId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("쿠폰 사용 처리 중 오류: " + e.getMessage());
+        } finally {
+            DBConnection.closeConnection(conn);
+        }
+    }
 
-            String str;
-            int num = 0;
+    public static void checkAndGrantFirstOrderCoupon(int userId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String sqlCount = "SELECT COUNT(*) FROM orders WHERE user_id = ?";
+        String sqlUpdate = "UPDATE users SET coupon_available = 1 WHERE user_id = ?";
 
-            while ((str = reader.readLine()) != null) {
-                if (str.contains("ISBN"))
-                    ++num;
+        try {
+            conn = DBConnection.getConnection();
+            pstmt = conn.prepareStatement(sqlCount);
+            pstmt.setInt(1, userId);
+            rs = pstmt.executeQuery();
+            
+            int orderCount = 0;
+            if (rs.next()) {
+                orderCount = rs.getInt(1);
+            }
+            
+            if (orderCount == 1) {
+                pstmt.close(); 
+                pstmt = conn.prepareStatement(sqlUpdate);
+                pstmt.setInt(1, userId);
+                pstmt.executeUpdate();
+                System.out.println("🎉 [축하합니다] 첫 주문 감사 이벤트로 10% 할인 쿠폰이 지급되었습니다! 다음 주문시 사용 가능합니다.");
             }
 
-            reader.close();
-            fr.close();
-            return num;
-        } catch (Exception e) {
-            System.out.println(e);
+        } catch (SQLException e) {
+            System.out.println("쿠폰 지급 중 오류: " + e.getMessage());
+        } finally {
+            DBConnection.closeConnection(conn);
         }
-        return 0;
+    }
+    
+    // ==============================================================
+
+    public static int totalDBToBookList() throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        int count = 0;
+        String sql = "SELECT COUNT(bookId) FROM books";
+
+        try {
+            conn = DBConnection.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                count = rs.getInt(1);
+            }
+        } finally {
+            if (rs != null) rs.close();
+            if (pstmt != null) pstmt.close();
+            DBConnection.closeConnection(conn);
+        }
+        return count;
     }
 
-    public static void setFileToBookList(ArrayList<Book> booklist) {
+    public static void setDBToBookList(ArrayList<Book> booklist) throws SQLException {
+		Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String sql = "SELECT * FROM books"; 
+
 		try {
-			FileReader fr = new FileReader("Book.txt");
-			BufferedReader reader = new BufferedReader(fr);
-
-			String str2;
-			String[] readBook = new String[7];
-			
-			while ((str2 = reader.readLine()) != null) {
-
-				if (str2.contains("ISBN")) {
-					readBook[0] = str2;
-					readBook[1] = reader.readLine();
-					readBook[2] = reader.readLine();
-					readBook[3] = reader.readLine();
-					readBook[4] = reader.readLine();
-					readBook[5] = reader.readLine();
-					readBook[6] = reader.readLine();
-					
-					Book bookitem = new Book(readBook[0], readBook[1], Integer.parseInt(readBook[2]), readBook[3],
-							readBook[4], readBook[5], readBook[6]);
-					booklist.add(bookitem); 
-				}
+            conn = DBConnection.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            rs = pstmt.executeQuery();
+            
+			while (rs.next()) {
+				Book bookitem = new Book(
+                    rs.getString("bookId"), 
+                    rs.getString("title"), 
+                    rs.getInt("unitPrice"), 
+                    rs.getString("author"),
+                    rs.getString("description"), 
+                    rs.getString("category"), 
+                    rs.getString("releaseDate"));
+				booklist.add(bookitem);
 			}
-
-			reader.close();
-			fr.close();
-
-		} catch (Exception e) {
-			System.out.println(e);
-		}
+		} finally {
+            if (rs != null) rs.close();
+            if (pstmt != null) pstmt.close();
+            DBConnection.closeConnection(conn);
+        }
 	}
+    
+	public static void BookList(ArrayList<Book> booklist) {
+        try {
+            setDBToBookList(booklist);
+        } catch (SQLException e) {
+            System.out.println("도서 목록 로딩 중 데이터베이스 오류 발생: " + e.getMessage());
+        }
+    }
 
     public static void menuExit() {
         System.out.println("프로그램을 종료합니다. 감사합니다!");
-    }
-
-	public static void BookList(ArrayList<Book> booklist) {
-		setFileToBookList(booklist);
     }
 
     public static boolean isCartInBook(String bookId) {
@@ -407,52 +573,193 @@ public class Welcome {
 
 		System.out.print("비밀번호 : ");
 		String adminPW = input.next();
+        input.nextLine(); 
+        
+        if (!isAdminValid(adminId, adminPW)) {
+            System.out.println("관리자 정보가 일치하지 않습니다.");
+            return;
+        }
 
 		Admin admin = new Admin(mUser.getName(), mUser.getPhone());
-		if (adminId.equals(admin.getId()) && adminPW.equals(admin.getPassword())) {
+        System.out.println("관리자 인증 성공!");
 
-			String[] writeBook = new String[7];
-			System.out.println("도서 정보를 추가하겠습니까?  Y  | N ");
-			String str = input.next();
-            input.nextLine(); 
+		System.out.println("도서 정보를 추가하겠습니까?  Y  | N ");
+		String str = input.nextLine();
 
-			if (str.toUpperCase().equals("Y")) {
+		if (str.toUpperCase().equals("Y")) {
+            String[] writeBook = new String[7];
+			Date date = new Date();
+			SimpleDateFormat formatter = new SimpleDateFormat("yyMMddhhmmss");
+			String strDate = formatter.format(date);
+			writeBook[0] = "ISBN" + strDate;
+			System.out.println("도서ID : " + writeBook[0]);
 
-				Date date = new Date();
+			System.out.print("도서명 : ");
+			writeBook[1] = input.nextLine();
+			System.out.print("가격 : ");
+			writeBook[2] = input.nextLine();
+			System.out.print("저자 : ");
+			writeBook[3] = input.nextLine();
+			System.out.print("설명 : "); 
+			writeBook[4] = input.nextLine();
+			System.out.print("분야 : ");
+			writeBook[5] = input.nextLine();
+			System.out.print("출판일 : ");
+			writeBook[6] = input.nextLine();
 
-				SimpleDateFormat formatter = new SimpleDateFormat("yyMMddhhmmss");
-				String strDate = formatter.format(date);
-				writeBook[0] = "ISBN" + strDate;
-				System.out.println("도서ID : " + writeBook[0]);
-
-				System.out.print("도서명 : ");
-				writeBook[1] = input.nextLine();
-				System.out.print("가격 : ");
-				writeBook[2] = input.nextLine();
-				System.out.print("저자 : ");
-				writeBook[3] = input.nextLine();
-				System.out.print("설명 : ");
-				writeBook[4] = input.nextLine();
-				System.out.print("분야 : ");
-				writeBook[5] = input.nextLine();
-				System.out.print("출판일 : ");
-				writeBook[6] = input.nextLine();
-
-				try {
-					FileWriter fw = new FileWriter("Book.txt", true);
-
-					for (int i = 0; i < 7; i++)
-						fw.write(writeBook[i] + "\n");
-					fw.close();
-					System.out.println("새 도서 정보가 저장되었습니다.");
-				} catch (Exception e) {
-					System.out.println(e);
-				}
-			} else {
-				System.out.println("이름 " + admin.getName() + " 연락처 " + admin.getPhone());
-				System.out.println("아이디 " + admin.getId() + " 비밀번호 " + admin.getPassword());
+			try {
+                insertBookToDB(writeBook);
+                System.out.println("새 도서 정보가 DB에 저장되었습니다.");
+			} catch (SQLException e) {
+                System.out.println("도서 정보 저장 중 데이터베이스 오류 발생: " + e.getMessage());
 			}
-		} else
-			System.out.println("관리자 정보가 일치하지 않습니다");
+		} else {
+			System.out.println("이름 " + admin.getName() + " 연락처 " + admin.getPhone());
+			System.out.println("아이디 " + admin.getId() + " 비밀번호 " + admin.getPassword());
+		}
 	}
+    
+    public static boolean isAdminValid(String id, String pw) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String sql = "SELECT login_id FROM admins WHERE login_id = ? AND password = ?"; 
+
+        try {
+            conn = DBConnection.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, id);
+            pstmt.setString(2, pw);
+            rs = pstmt.executeQuery();
+
+            return rs.next();
+        } catch (SQLException e) {
+            System.out.println("관리자 DB 인증 중 오류 발생: " + e.getMessage());
+            return false;
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (pstmt != null) pstmt.close();
+                DBConnection.closeConnection(conn);
+            } catch (SQLException e) {
+                System.err.println("자원 해제 오류: " + e.getMessage());
+            }
+        }
+    }
+    
+    public static void insertBookToDB(String[] bookInfo) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        String sql = "INSERT INTO books (bookId, title, unitPrice, author, description, category, releaseDate) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try {
+            conn = DBConnection.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            
+            pstmt.setString(1, bookInfo[0]); 
+            pstmt.setString(2, bookInfo[1]); 
+            pstmt.setInt(3, Integer.parseInt(bookInfo[2])); 
+            pstmt.setString(4, bookInfo[3]); 
+            pstmt.setString(5, bookInfo[4]); 
+            pstmt.setString(6, bookInfo[5]); 
+            pstmt.setString(7, bookInfo[6]); 
+
+            pstmt.executeUpdate();
+        } finally {
+            if (pstmt != null) pstmt.close();
+            DBConnection.closeConnection(conn);
+        }
+    }
+
+    public static void loginOrRegisterUser(User user) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
+        String checkSql = "SELECT user_id FROM users WHERE name = ? AND phone = ?";
+        String insertSql = "INSERT INTO users (name, phone) VALUES (?, ?)";
+
+        try {
+            conn = DBConnection.getConnection();
+            
+            pstmt = conn.prepareStatement(checkSql);
+            pstmt.setString(1, user.getName());
+            pstmt.setString(2, String.valueOf(user.getPhone()));
+            rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                currentUserId = rs.getInt("user_id");
+                System.out.println("--> [로그인 성공] 기존 고객님 환영합니다! (ID: " + currentUserId + ")");
+            } else {
+                pstmt.close(); 
+                pstmt = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
+                pstmt.setString(1, user.getName());
+                pstmt.setString(2, String.valueOf(user.getPhone()));
+                pstmt.executeUpdate();
+                
+                rs = pstmt.getGeneratedKeys();
+                if (rs.next()) {
+                    currentUserId = rs.getInt(1);
+                }
+                System.out.println("--> [회원가입 완료] 신규 고객님 환영합니다! (ID: " + currentUserId + ")");
+            }
+            
+        } catch (SQLException e) {
+            System.out.println("고객 로그인/등록 실패: " + e.getMessage());
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (pstmt != null) pstmt.close();
+            } catch (SQLException e) { e.printStackTrace(); }
+            if (conn != null) DBConnection.closeConnection(conn);
+        }
+    }
+
+    public static void insertOrderToDB() throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmtOrder = null;
+        PreparedStatement pstmtItem = null;
+        ResultSet rs = null;
+
+        try {
+            conn = DBConnection.getConnection();
+            
+            String sqlOrder = "INSERT INTO orders (user_id, orderer_name, orderer_phone, delivery_address) VALUES (?, ?, ?, ?)";
+            pstmtOrder = conn.prepareStatement(sqlOrder, Statement.RETURN_GENERATED_KEYS);
+            
+            pstmtOrder.setInt(1, currentUserId);
+            pstmtOrder.setString(2, ordererName);
+            pstmtOrder.setString(3, ordererPhone);
+            pstmtOrder.setString(4, deliveryAddress);
+            
+            pstmtOrder.executeUpdate();
+            
+            int orderId = 0;
+            rs = pstmtOrder.getGeneratedKeys();
+            if (rs.next()) {
+                orderId = rs.getInt(1);
+            }
+
+            String sqlItem = "INSERT INTO order_items (order_id, book_id, quantity, unit_price) VALUES (?, ?, ?, ?)";
+            pstmtItem = conn.prepareStatement(sqlItem);
+
+            for (int i = 0; i < mCart.mCartItem.size(); i++) {
+                CartItem item = mCart.mCartItem.get(i);
+                pstmtItem.setInt(1, orderId);
+                pstmtItem.setString(2, item.getBookID());
+                pstmtItem.setInt(3, item.getQuantity());
+                pstmtItem.setInt(4, item.getItemBook().getUnitPrice()); 
+                
+                pstmtItem.addBatch(); 
+            }
+            
+            pstmtItem.executeBatch(); 
+
+        } finally {
+            if (rs != null) rs.close();
+            if (pstmtOrder != null) pstmtOrder.close();
+            if (pstmtItem != null) pstmtItem.close();
+            DBConnection.closeConnection(conn);
+        }
+    }
 }
