@@ -15,23 +15,6 @@ public class CartItem {
 		// TODO Auto-generated constructor stub
 	}
 	
-	/*public CartItem(String[] book) {
-			
-		this.itemBook = book;
-		this.bookID = book[0];
-		this.quantity = 1;	
-		updateTotalPrice();
-	}
-	
-	
-	public String[] getItemBook() {
-		return itemBook;
-	}
-
-	public void setItemBook(String[] itemBook) {
-		this.itemBook = itemBook;
-	}
-	*/
 	
 	public CartItem(Book booklist) {
 		
@@ -79,7 +62,6 @@ public class CartItem {
 	}
 
 	public void updateTotalPrice() {
-		//totalPrice = Integer.parseInt(this.itemBook[2]) * this.quantity;
 		totalPrice = this.itemBook.getUnitPrice() * this.quantity;
 		
 	}

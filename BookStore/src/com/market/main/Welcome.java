@@ -26,27 +26,29 @@ public class Welcome {
 	static Cart mCart = new Cart();
 	static User mUser;
 	
+	// 주문 및 배송정보
 	static String ordererName = "";
 	static String ordererPhone = "";
 	static String deliveryAddress = "";
 	static boolean isOrderPlaced = false; // 주문 완료 여부 확인용
 	
-	static int currentUserId = 0;
-    static boolean isCouponApplied = false; 
-    static int finalTotalPrice = 0;         
+	static int currentUserId = 0; //DB에서 조회/생성된 현재 사용자 ID 
+    static boolean isCouponApplied = false; //현재 주문에 쿠폰이 적용되었는지 여부
+    static int finalTotalPrice = 0; // 최종 결제 금액(쿠폰 적용 후 금액)        
 
-    // [추가] 장바구니가 비워진 후에도 영수증을 출력하기 위해 마지막 주문 정보를 저장할 리스트
+    // 장바구니가 비워진 후에도 영수증을 출력하기 위해 마지막 주문 정보를 저장할 리스트
     static ArrayList<CartItem> lastOrderCartItems = new ArrayList<>();
 
 	public static void main(String[] args) {
 		ArrayList<Book> mBookList;
 		int mTotalBook = 0;
-
+		
+		//DB 연결 테스트 & 프로그램 시작
         try (Connection conn = DBConnection.getConnection()) {
-            System.out.println("데이터베이스 연결 성공!");
+            System.out.println("데이터베이스 연결 성공");
         } catch (SQLException e) {
             System.out.println("데이터베이스 연결 실패: " + e.getMessage());
-            System.out.println("프로그램을 종료합니다.");
+            System.out.println("프로그램을 종료합니다."); //DB 연결 실패 시 프로그램 종료
             return;
         }
         
@@ -56,10 +58,11 @@ public class Welcome {
 
         System.out.print("연락처를 입력하세요: ");
         int userMobile = input.nextInt();
-        input.nextLine(); 
+        input.nextLine();  // 버퍼 비우기 
         
-        mUser = new User(userName, userMobile);
+        mUser = new User(userName, userMobile); // 임시 User 객체
         
+        // 사용자를 DB에서 조회하거나 새로 등록하고 currentUserId 생성 
         loginOrRegisterUser(mUser); 
         
         String greeting = "Welcome to Shopping Mall";
@@ -82,53 +85,54 @@ public class Welcome {
 					System.out.println("1부터 10까지의 숫자를 입력하세요.");
 				} else {
 					switch (n) {
-					case 1:
+					case 1: // 고객 정보 확인
 						menuGuestInfo(userName, userMobile); 
 						break;
-					case 2:
+					case 2: // 장바구니 목록 보기
 						menuCartItemList(); 
 						break;	
-					case 3:
+					case 3: // 장바구니 비우기
 						menuCartClear(); 
 						break;
-					case 4:
-						mTotalBook = totalDBToBookList();
+					case 4: 
+						mTotalBook = totalDBToBookList(); //DB에서 총 도서 개수 가져오기
 						mBookList = new ArrayList<Book>();
-						menuCartAddItem(mBookList); 
+						menuCartAddItem(mBookList);  // DB에서 목록 로드
 						break;
-					case 5:
+					case 5: // 장바구니 수량 변경
 						menuCartEditQuantity(); 
 						break;
-					case 6:
+					case 6: //장바구니 항목 삭제
 						menuCartRemoveItem(); 
 						break;	
-					case 7:
-						menuOrder(); // [핵심] 여기서 주문/결제/DB저장 모두 수행
+					case 7: //주문 처리(DB 저장, 쿠폰 사용, 장바구니 비우기)
+						menuOrder(); 
 						break;
-					case 8:
-						menuCartBill(); // [핵심] 여기서는 내역 조회만 수행
+					case 8: // 영수증 보기
+						menuCartBill();
 						break;
-					case 9:
+					case 9: // 관리자 로그인 및 도서 추가 
 						menuAdminLogin(); 
 						break;
-					case 10:
+					case 10: // 프로그램 종료
 						menuExit(); 
 						quit = true;
 						break;	
 					}				
 				}
-        	} catch (CartException e) {
+        	} catch (CartException e) { // 장바구니 관련 사용자 정의 예외 처리
         		System.out.println(e.getMessage());
-        	} catch (SQLException e) {
+        	} catch (SQLException e) { // DB 작업 중 발생한 예외 처리
                 System.out.println("데이터베이스 처리 중 오류 발생: " + e.getMessage());
-        	} catch (Exception e) {
+        	} catch (Exception e) { // 일반적인 입력 오류 및 예상치 못한 예외처리
         		System.out.println("올바르지 않은 메뉴 선택 또는 입력 오류로 종료합니다.");
-        		input.nextLine(); 
+        		input.nextLine(); // 입력 버퍼 정리
                 quit = true;
             } 
         }
     }
-
+	
+	// 메인 메뉴 항목 출력
     public static void menuIntroduction() {
         System.out.println("****************************************************");
         System.out.println(" 1. 고객 정보 확인하기 \t6. 장바구니의 항목 삭제하기");
@@ -138,7 +142,8 @@ public class Welcome {
         System.out.println(" 5. 장바구니 수량 변경하기\t10. 종료");
         System.out.println("****************************************************");
     }
-
+    
+    // 현재 로그인된 고객 정보를 출력
     public static void menuGuestInfo(String name, int mobile) {
         System.out.println("현재 고객 정보:");
         System.out.println("이름: " + mUser.getName() + "  연락처: " + mUser.getPhone());
@@ -148,7 +153,8 @@ public class Welcome {
             System.out.println("보유 쿠폰: 없음");
         }
     }
-
+    
+    // 현재 장바구니에 담긴 상품 목록 출력
     public static void menuCartItemList() {
         if (mCart.mCartCount > 0) {
             mCart.printCart();
@@ -156,7 +162,8 @@ public class Welcome {
              System.out.println("장바구니에 항목이 없습니다.");
         }
     }
-
+    
+    // 장바구니의 모든 항목 삭제
     public static void menuCartClear() throws CartException {
         if (mCart.mCartCount == 0)
             throw new CartException("장바구니에 항목이 없습니다.");
@@ -171,11 +178,13 @@ public class Welcome {
             }
         }
     }
-
+    
+    // DB에서 도서 목록을 불러와 출력 후 사용자가 선택한 도서를 장바구니에 추가 
+    // ArrayList<Book> booklist : DB에서 로드된 Book 객체를 담을 리스트
     public static void menuCartAddItem(ArrayList<Book> booklist) {
         try {
-            setDBToBookList(booklist);
-            mCart.printBookList(booklist);
+            setDBToBookList(booklist); // DB에서 도서 목록을 가져와 booklist에 채움
+            mCart.printBookList(booklist); // 도서 목록 출력
         } catch (SQLException e) {
             System.out.println("도서 목록 로딩 실패: " + e.getMessage());
             return;
@@ -190,7 +199,8 @@ public class Welcome {
 
             boolean flag = false;
             int numId = -1;
-
+            
+            // 입력된 ID와 일치하는 도서를 리스트에서 찾음
             for (int i = 0; i < booklist.size(); i++) {
                 if (str.equals(booklist.get(i).getBookId())) {
                     numId = i;
@@ -205,6 +215,7 @@ public class Welcome {
 
                 if (str.equalsIgnoreCase("Y")) {
                     System.out.println(booklist.get(numId).getBookId() + " 도서가 장바구니에 추가되었습니다.");
+                    // 이미 장바구니에 있는 책인지 확인 후 추가(Cart 클래스에서 수량 증가 로직 처리)
                     if (!isCartInBook(booklist.get(numId).getBookId())) {
                         mCart.insertBook(booklist.get(numId));
                     }
@@ -216,11 +227,12 @@ public class Welcome {
         }
     }
     
+    // 장바구니 항목의 수량 변경, 장바구니가 비어있을 시 CartException
     public static void menuCartEditQuantity() throws CartException {
         if (mCart.mCartCount == 0)
             throw new CartException("장바구니에 항목이 없습니다.");
         else {
-            menuCartItemList();
+            menuCartItemList(); // 현재 장바구니 목록 출력
             boolean quit = false;
             Scanner input = new Scanner(System.in);
 
@@ -232,7 +244,7 @@ public class Welcome {
                     quit = true;
                     continue;
                 }
-                
+                // 해당 도서 ID가 장바구니 어디에 있는지 찾음
                 int cartItemIndex = mCart.getCartItemIndex(bookId);
 
                 if (cartItemIndex != -1) {
@@ -245,7 +257,8 @@ public class Welcome {
                              System.out.println("수량은 1 이상이어야 합니다. 항목 삭제를 원하시면 6번 메뉴를 이용해주세요.");
                              continue;
                         }
-
+                        
+                        // Cart 클래스 메서드를 사용해 수량 업데이트
                         mCart.setCartItemQuantity(cartItemIndex, newQuantity);
                         System.out.println(bookId + " 도서의 수량이 " + newQuantity + "로 변경되었습니다.");
                         menuCartItemList();
@@ -253,7 +266,7 @@ public class Welcome {
 
                     } catch (Exception e) {
                         System.out.println("잘못된 수량 입력입니다. 다시 입력해주세요.");
-                        input.nextLine(); 
+                        input.nextLine(); // 입력 버퍼 정리
                     }
                 } else {
                     System.out.println("장바구니에 해당 도서 ID가 없습니다. 다시 입력해주세요.");
@@ -262,7 +275,7 @@ public class Welcome {
         }
     }
 
-
+    // 장바구니에서 선책한 항목을 삭제, 장바구니가 비어 있을 경우 CartException
     public static void menuCartRemoveItem() throws CartException {
         if (mCart.mCartCount == 0)
             throw new CartException("장바구니에 항목이 없습니다.");
@@ -277,7 +290,8 @@ public class Welcome {
 
                 boolean flag = false;
                 int numId = -1;
-
+                
+                // 입력된 ID와 일치하는 항목을 장바구니에서 찾
                 for (int i = 0; i < mCart.mCartItem.size(); i++) {
                     if (str.equals(mCart.mCartItem.get(i).getBookID())) {
                         numId = i;
@@ -292,7 +306,7 @@ public class Welcome {
 
                     if (str.equalsIgnoreCase("Y")) {
                         System.out.println(mCart.mCartItem.get(numId).getBookID() + " 도서가 장바구니에서 삭제되었습니다.");
-                        mCart.removeCart(numId);
+                        mCart.removeCart(numId); // Cart 클래스의 항목 삭제 메서드 호출
                     }
                     quit = true;
                 } else {
@@ -302,7 +316,9 @@ public class Welcome {
         }
     }
     
-    // [수정됨] 주문 프로세스 전체 처리 (DB 저장, 쿠폰 사용, 장바구니 비우기)
+    // 주문 정보를 입력받고, 쿠폰 적용 후 DB에 주문을 저장하고, 장바구니 비움
+    // CartException : 장바구니가 비어있을 때 발생
+    // SQLException : DB 처리 중 오류 발생
     public static void menuOrder() throws CartException, SQLException {
         if (mCart.mCartCount == 0)
             throw new CartException("장바구니에 항목이 없습니다. 주문할 수 없습니다.");
@@ -312,7 +328,8 @@ public class Welcome {
         
         System.out.println("배송받을 분은 고객 정보와 같습니까? (Y/N)");
         String str = input.nextLine();
-
+        
+        // 배송지 정보 입력 처리
         if (str.equalsIgnoreCase("Y")) {
             ordererName = mUser.getName();
             ordererPhone = String.valueOf(mUser.getPhone());
@@ -327,13 +344,13 @@ public class Welcome {
             deliveryAddress = input.nextLine();
         }
         
-        // === 쿠폰 적용 로직 ===
-        int total = mCart.getCartTotal();
+        // 쿠폰 적용 로직 
+        int total = mCart.getCartTotal(); // 장바구니 원금액
         isCouponApplied = false;
         finalTotalPrice = total;
 
         if (checkCoupon(currentUserId)) {
-            System.out.println("\n🎉 10% 할인 쿠폰을 가지고 계십니다! 🎉");
+            System.out.println("\n10% 할인 쿠폰을 가지고 계십니다!");
             System.out.print("쿠폰을 이번 주문에 사용하시겠습니까? (Y/N): ");
             String answer = input.nextLine();
             
@@ -350,36 +367,37 @@ public class Welcome {
         String confirm = input.nextLine();
 
         if(confirm.equalsIgnoreCase("Y")) {
-             // 1. 주문 정보 DB 저장
+             // 주문 정보 DB 저장
             try {
                 insertOrderToDB();
                 
-                // 2. 쿠폰 사용 처리
+                // 쿠폰 사용 처리
                 if (isCouponApplied) {
                     useCoupon(currentUserId);
                     System.out.println(">> 쿠폰이 사용 처리(소멸)되었습니다.");
                 }
 
-                // 3. 첫 구매 쿠폰 발급
+                // 첫 구매 쿠폰 발급
                 checkAndGrantFirstOrderCoupon(currentUserId);
                 
-                // 4. 영수증 출력을 위해 현재 장바구니 내용을 백업 (복사)
+                // 영수증 출력을 위해 현재 장바구니 내용을 백업
                 lastOrderCartItems = new ArrayList<>(mCart.mCartItem);
 
-                // 5. 장바구니 비우기 및 상태 업데이트
+                // 장바구니 비우기 및 상태 업데이트
                 mCart.deleteBook(); 
                 isOrderPlaced = true; 
-                System.out.println("✅ 주문이 성공적으로 완료되었습니다! (8. 영수증 보기에서 내역 확인 가능)");
+                System.out.println("주문이 성공적으로 완료되었습니다!");
 
             } catch (SQLException e) {
-                System.out.println("❌ 주문 처리 중 오류 발생: " + e.getMessage());
+                System.out.println("주문 처리 중 오류 발생: " + e.getMessage());
             }
         } else {
             System.out.println("주문이 취소되었습니다.");
         }
     }
     
-    // [수정됨] 단순히 저장된 주문 내역(영수증)만 출력하는 역할 (Read-Only)
+    // 마지막으로 완료된 주문의 영수증 내역 출력
+    // CartException : 완료된 주문 내역이 없을 경우 발생
     public static void menuCartBill() throws CartException {
         if (!isOrderPlaced)
              throw new CartException("최근 완료된 주문 내역이 없습니다. 먼저 7번 메뉴로 주문해주세요.");
@@ -388,7 +406,7 @@ public class Welcome {
         printBill(ordererName, ordererPhone, deliveryAddress, finalTotalPrice);
     }
 
-    // [수정됨] Cart 객체 대신 백업해둔 리스트(lastOrderCartItems)를 사용해 출력
+    // 저장된 주문 정보를 기반으로 영수증을 포맷에 맞게 출력
     public static void printBill(String name, String phone, String address, int finalPrice) {
         Date date = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
@@ -403,7 +421,7 @@ public class Welcome {
         System.out.println("----------------------------------------------------------------");
         System.out.println("         도서ID \t :          수량 \t:                합계");
         
-        // 백업해둔 리스트 사용
+        // 주문 시 백업해둔 리스트를 사용해 출력
         for (CartItem item : lastOrderCartItems) {
 			System.out.print("    " + item.getBookID() + " \t| ");
 			System.out.print("    " + item.getQuantity() + " \t| ");
@@ -413,14 +431,12 @@ public class Welcome {
         System.out.println("----------------------------------------------------------------");
 
         System.out.println("\t\t\t\t최종 결제 금액: " + finalPrice + "원\n");
-        System.out.println("----------------------------------------------");
+        System.out.println("----------------------------------------------------------------");
         System.out.println();
     } 
 
-    // ==============================================================
-    // 쿠폰 관련 JDBC 메서드들
-    // ==============================================================
-
+    // 쿠폰 관련 JDBC 메서드
+    // DB에서 특정 사용자의 쿠폰 보유 여부 확인
     public static boolean checkCoupon(int userId) {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -434,7 +450,7 @@ public class Welcome {
             pstmt.setInt(1, userId);
             rs = pstmt.executeQuery();
             if (rs.next()) {
-                hasCoupon = rs.getInt(1) == 1;
+                hasCoupon = rs.getInt(1) == 1; // 1이면 쿠폰 있음, 0이면 없음
             }
         } catch (SQLException e) {
             System.out.println("쿠폰 확인 중 오류: " + e.getMessage());
@@ -443,7 +459,9 @@ public class Welcome {
         }
         return hasCoupon;
     }
-
+    
+    // DB에서 특정 사용자의 쿠폰 사용을 처리
+    // coupon_available를 0으로 업데이트
     public static void useCoupon(int userId) {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -460,7 +478,8 @@ public class Welcome {
             DBConnection.closeConnection(conn);
         }
     }
-
+    
+    // 사용자의 주문 횟수를 확인하여 첫 주문인 경우 쿠폰 지급
     public static void checkAndGrantFirstOrderCoupon(int userId) {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -470,6 +489,7 @@ public class Welcome {
 
         try {
             conn = DBConnection.getConnection();
+            // 주문 횟수 조회
             pstmt = conn.prepareStatement(sqlCount);
             pstmt.setInt(1, userId);
             rs = pstmt.executeQuery();
@@ -478,13 +498,13 @@ public class Welcome {
             if (rs.next()) {
                 orderCount = rs.getInt(1);
             }
-            
+            // 주문 횟수가 1인 경우에만 쿠폼 지
             if (orderCount == 1) {
-                pstmt.close(); 
+                pstmt.close();  // 이전 PreparedStatement 닫기
                 pstmt = conn.prepareStatement(sqlUpdate);
                 pstmt.setInt(1, userId);
                 pstmt.executeUpdate();
-                System.out.println("🎉 [축하합니다] 첫 주문 감사 이벤트로 10% 할인 쿠폰이 지급되었습니다! 다음 주문시 사용 가능합니다.");
+                System.out.println("[축하합니다] 첫 주문 감사 이벤트로 10% 할인 쿠폰이 지급되었습니다! 다음 주문시 사용 가능합니다.");
             }
 
         } catch (SQLException e) {
@@ -494,8 +514,8 @@ public class Welcome {
         }
     }
     
-    // ==============================================================
-
+    // DB의 books 테이블에 저장된 전체 도서 개수를 조회
+    // SQLException : DB 처리 중 오류 발생
     public static int totalDBToBookList() throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -518,7 +538,8 @@ public class Welcome {
         }
         return count;
     }
-
+    
+    // DB의 books 테이블에 저장된 모든 도서 정보를 조회하여 ArrayList<Book>에 담음
     public static void setDBToBookList(ArrayList<Book> booklist) throws SQLException {
 		Connection conn = null;
         PreparedStatement pstmt = null;
@@ -531,6 +552,7 @@ public class Welcome {
             rs = pstmt.executeQuery();
             
 			while (rs.next()) {
+				// ResultSet에서 데이터를 읽어 Book 객체를 생성하고 리스트에 추가
 				Book bookitem = new Book(
                     rs.getString("bookId"), 
                     rs.getString("title"), 
@@ -555,15 +577,18 @@ public class Welcome {
             System.out.println("도서 목록 로딩 중 데이터베이스 오류 발생: " + e.getMessage());
         }
     }
-
+	
+	// 프로그램 종료 메시지를 출력
     public static void menuExit() {
         System.out.println("프로그램을 종료합니다. 감사합니다!");
     }
-
+    
+    // 장바구니에 해당 도서 ID가 이미 존재하는지 확인
     public static boolean isCartInBook(String bookId) {
         return mCart.isCartInBook(bookId);
     }
-
+    
+    // 관리자 로그인 및 새로운 도서 정보를 DB에 추가
     public static void menuAdminLogin() {
     	System.out.println("관리자 정보를 입력하세요.");
 
@@ -573,8 +598,9 @@ public class Welcome {
 
 		System.out.print("비밀번호 : ");
 		String adminPW = input.next();
-        input.nextLine(); 
+        input.nextLine(); // 버퍼 비우기
         
+        // DB를 통해 관리자 ID/PW 유효성 검사
         if (!isAdminValid(adminId, adminPW)) {
             System.out.println("관리자 정보가 일치하지 않습니다.");
             return;
@@ -591,9 +617,11 @@ public class Welcome {
 			Date date = new Date();
 			SimpleDateFormat formatter = new SimpleDateFormat("yyMMddhhmmss");
 			String strDate = formatter.format(date);
+			
+			// 새로운 도서ID 생성
 			writeBook[0] = "ISBN" + strDate;
 			System.out.println("도서ID : " + writeBook[0]);
-
+			
 			System.out.print("도서명 : ");
 			writeBook[1] = input.nextLine();
 			System.out.print("가격 : ");
@@ -608,21 +636,25 @@ public class Welcome {
 			writeBook[6] = input.nextLine();
 
 			try {
+				//DB에 새 도서 정보 저장
                 insertBookToDB(writeBook);
                 System.out.println("새 도서 정보가 DB에 저장되었습니다.");
 			} catch (SQLException e) {
                 System.out.println("도서 정보 저장 중 데이터베이스 오류 발생: " + e.getMessage());
 			}
 		} else {
+			// 관리자 인증 성공 후 Y/N에서 N을 선택한 경우 관리자 정보만 출력
 			System.out.println("이름 " + admin.getName() + " 연락처 " + admin.getPhone());
 			System.out.println("아이디 " + admin.getId() + " 비밀번호 " + admin.getPassword());
 		}
 	}
     
+    // DB의 admins 테이블에서 관리자 ID와 비밀번호의 유효성을 검사
     public static boolean isAdminValid(String id, String pw) {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
+        // admins 테이블에서 ID와 PW가 일치하는 레코드 조회
         String sql = "SELECT login_id FROM admins WHERE login_id = ? AND password = ?"; 
 
         try {
@@ -632,12 +664,13 @@ public class Welcome {
             pstmt.setString(2, pw);
             rs = pstmt.executeQuery();
 
-            return rs.next();
+            return rs.next(); // 레코드가 존재하면 true(인증 성공)
         } catch (SQLException e) {
             System.out.println("관리자 DB 인증 중 오류 발생: " + e.getMessage());
             return false;
         } finally {
             try {
+            	// 자원 해제
                 if (rs != null) rs.close();
                 if (pstmt != null) pstmt.close();
                 DBConnection.closeConnection(conn);
@@ -647,6 +680,7 @@ public class Welcome {
         }
     }
     
+    // 새로운 도서정보를 DB의 books 테이블에 INSERT
     public static void insertBookToDB(String[] bookInfo) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -664,13 +698,15 @@ public class Welcome {
             pstmt.setString(6, bookInfo[5]); 
             pstmt.setString(7, bookInfo[6]); 
 
-            pstmt.executeUpdate();
+            pstmt.executeUpdate(); // 쿼리 실행
         } finally {
             if (pstmt != null) pstmt.close();
             DBConnection.closeConnection(conn);
         }
     }
-
+    
+    // 사용자 이름과 연락처를 DB의 users 테이블에서 조회
+    // 이미 존재하면 로그인 처리(ID 설정), 없으면 회원가입 처리(새 레코드 삽입 후 ID 설정)
     public static void loginOrRegisterUser(User user) {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -682,21 +718,26 @@ public class Welcome {
         try {
             conn = DBConnection.getConnection();
             
+            // 사용자 조회(로그인 시도)
             pstmt = conn.prepareStatement(checkSql);
             pstmt.setString(1, user.getName());
             pstmt.setString(2, String.valueOf(user.getPhone()));
             rs = pstmt.executeQuery();
             
             if (rs.next()) {
+            	//기존 사용자 : ID 설정
                 currentUserId = rs.getInt("user_id");
                 System.out.println("--> [로그인 성공] 기존 고객님 환영합니다! (ID: " + currentUserId + ")");
             } else {
-                pstmt.close(); 
+            	// 신규 사용자 : 등록(회원가입)
+                pstmt.close(); //이전 pstmt 닫기
+                // INSERT 후 생성된 키(user_id)를 반환받도록 설정
                 pstmt = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
                 pstmt.setString(1, user.getName());
                 pstmt.setString(2, String.valueOf(user.getPhone()));
                 pstmt.executeUpdate();
                 
+                // 생성된 user_id를 가져와 currentUserId에 설정
                 rs = pstmt.getGeneratedKeys();
                 if (rs.next()) {
                     currentUserId = rs.getInt(1);
@@ -707,6 +748,7 @@ public class Welcome {
         } catch (SQLException e) {
             System.out.println("고객 로그인/등록 실패: " + e.getMessage());
         } finally {
+        	// 자원 해제
             try {
                 if (rs != null) rs.close();
                 if (pstmt != null) pstmt.close();
@@ -714,7 +756,8 @@ public class Welcome {
             if (conn != null) DBConnection.closeConnection(conn);
         }
     }
-
+    
+    // 장바구니 내용과 주문 정보를 DB의 orders 및 order_item 테이블에 저장
     public static void insertOrderToDB() throws SQLException {
         Connection conn = null;
         PreparedStatement pstmtOrder = null;
@@ -724,7 +767,9 @@ public class Welcome {
         try {
             conn = DBConnection.getConnection();
             
+            // orders 테이블에 주문정보 삽입
             String sqlOrder = "INSERT INTO orders (user_id, orderer_name, orderer_phone, delivery_address) VALUES (?, ?, ?, ?)";
+            // INSERT 후 생성된 order_id를 반환받도록 설정
             pstmtOrder = conn.prepareStatement(sqlOrder, Statement.RETURN_GENERATED_KEYS);
             
             pstmtOrder.setInt(1, currentUserId);
@@ -734,12 +779,14 @@ public class Welcome {
             
             pstmtOrder.executeUpdate();
             
+            // 생성된 order_id(기본키) 가져오기
             int orderId = 0;
             rs = pstmtOrder.getGeneratedKeys();
             if (rs.next()) {
                 orderId = rs.getInt(1);
             }
-
+            
+            // order_items 테이블에 주문 상세 항목 삽입
             String sqlItem = "INSERT INTO order_items (order_id, book_id, quantity, unit_price) VALUES (?, ?, ?, ?)";
             pstmtItem = conn.prepareStatement(sqlItem);
 
@@ -750,12 +797,13 @@ public class Welcome {
                 pstmtItem.setInt(3, item.getQuantity());
                 pstmtItem.setInt(4, item.getItemBook().getUnitPrice()); 
                 
-                pstmtItem.addBatch(); 
+                pstmtItem.addBatch();  // Batch에 쿼리 추가
             }
             
-            pstmtItem.executeBatch(); 
+            pstmtItem.executeBatch(); // Batch 쿼리 일괄 실행
 
         } finally {
+        	// 자원 해제
             if (rs != null) rs.close();
             if (pstmtOrder != null) pstmtOrder.close();
             if (pstmtItem != null) pstmtItem.close();
