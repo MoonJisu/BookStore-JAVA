@@ -23,8 +23,8 @@ import com.market.member.User;
 public class Welcome {
 	static final int NUM_BOOK = 3;
 	static final int NUM_ITEM = 7;
-	static Cart mCart = new Cart();
-	static User mUser;
+	public static Cart mCart = new Cart();	// + 추가) CartPanel 접근을 위해 public 추가
+	public static User mUser;				// + 추가) LoginPanel 접근을 위해 public 추가
 	
 	// 주문 및 배송정보
 	static String ordererName = "";
@@ -32,7 +32,7 @@ public class Welcome {
 	static String deliveryAddress = "";
 	static boolean isOrderPlaced = false; // 주문 완료 여부 확인용
 	
-	static int currentUserId = 0; //DB에서 조회/생성된 현재 사용자 ID 
+	public static int currentUserId = 0; //DB에서 조회/생성된 현재 사용자 ID + 추가) InfoPanel 접근을 위해 public 추가
     static boolean isCouponApplied = false; //현재 주문에 쿠폰이 적용되었는지 여부
     static int finalTotalPrice = 0; // 최종 결제 금액(쿠폰 적용 후 금액)        
 
