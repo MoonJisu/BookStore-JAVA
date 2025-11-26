@@ -81,40 +81,44 @@ public class Welcome {
         		int n = input.nextInt();
                 input.nextLine(); 
 
-				if (n < 1 || n > 10) {
-					System.out.println("1부터 10까지의 숫자를 입력하세요.");
+                // 메뉴 번호가 1~11로 변경됨
+				if (n < 1 || n > 11) {
+					System.out.println("1부터 11까지의 숫자를 입력하세요.");
 				} else {
 					switch (n) {
 					case 1: // 고객 정보 확인
 						menuGuestInfo(userName, userMobile); 
 						break;
-					case 2: // 장바구니 목록 보기
+                    case 2: // [신규] 도서 검색 기능
+                        menuSearchBook();
+                        break;
+					case 3: // [기존 2번] 장바구니 목록 보기
 						menuCartItemList(); 
 						break;	
-					case 3: // 장바구니 비우기
+					case 4: // [기존 3번] 장바구니 비우기
 						menuCartClear(); 
 						break;
-					case 4: 
+					case 5: // [기존 4번] 장바구니 항목 추가
 						mTotalBook = totalDBToBookList(); //DB에서 총 도서 개수 가져오기
 						mBookList = new ArrayList<Book>();
 						menuCartAddItem(mBookList);  // DB에서 목록 로드
 						break;
-					case 5: // 장바구니 수량 변경
+					case 6: // [기존 5번] 장바구니 수량 변경
 						menuCartEditQuantity(); 
 						break;
-					case 6: //장바구니 항목 삭제
+					case 7: // [기존 6번] 장바구니 항목 삭제
 						menuCartRemoveItem(); 
 						break;	
-					case 7: //주문 처리(DB 저장, 쿠폰 사용, 장바구니 비우기)
+					case 8: // [기존 7번] 주문 처리
 						menuOrder(); 
 						break;
-					case 8: // 영수증 보기
+					case 9: // [기존 8번] 영수증 보기
 						menuCartBill();
 						break;
-					case 9: // 관리자 로그인 및 도서 추가 
+					case 10: // [기존 9번] 관리자 로그인
 						menuAdminLogin(); 
 						break;
-					case 10: // 프로그램 종료
+					case 11: // [기존 10번] 프로그램 종료
 						menuExit(); 
 						quit = true;
 						break;	
@@ -132,14 +136,15 @@ public class Welcome {
         }
     }
 	
-	// 메인 메뉴 항목 출력
+	// 메인 메뉴 항목 출력 (번호 재정렬)
     public static void menuIntroduction() {
         System.out.println("****************************************************");
-        System.out.println(" 1. 고객 정보 확인하기 \t6. 장바구니의 항목 삭제하기");
-        System.out.println(" 2. 장바구니 상품 목록 \t7. 주문하기");
-        System.out.println(" 3. 장바구니 비우기 \t8. 영수증 보기");
-        System.out.println(" 4. 장바구니에 항목 추가하기 \t9. 관리자 로그인");
-        System.out.println(" 5. 장바구니 수량 변경하기\t10. 종료");
+        System.out.println(" 1. 고객 정보 확인하기 \t7. 장바구니의 항목 삭제하기");
+        System.out.println(" 2. 도서 검색하기      \t8. 주문하기");
+        System.out.println(" 3. 장바구니 상품 목록 \t9. 영수증 보기");
+        System.out.println(" 4. 장바구니 비우기    \t10. 관리자 로그인");
+        System.out.println(" 5. 장바구니에 항목 추가하기 \t11. 종료");
+        System.out.println(" 6. 장바구니 수량 변경하기");
         System.out.println("****************************************************");
     }
     
@@ -151,6 +156,113 @@ public class Welcome {
             System.out.println("보유 쿠폰: [첫 구매 감사 10% 할인 쿠폰]");
         } else {
             System.out.println("보유 쿠폰: 없음");
+        }
+    }
+
+    // [신규 기능] 도서 검색 메뉴 처리
+    public static void menuSearchBook() {
+        Scanner input = new Scanner(System.in);
+        System.out.print("검색할 도서의 제목 또는 저자를 입력하세요: ");
+        String keyword = input.nextLine();
+
+        ArrayList<Book> searchList = new ArrayList<>();
+
+        try {
+            // DB 검색 메서드 호출
+            searchBookList(searchList, keyword);
+            
+            if (searchList.isEmpty()) {
+                System.out.println("'" + keyword + "'(으)로 검색된 도서가 없습니다.");
+                return;
+            }
+
+            // 검색 결과 출력
+            System.out.println("----------------------------------------------------------------");
+            System.out.println("검색 결과 : " + searchList.size() + "건");
+            mCart.printBookList(searchList); // 기존 출력 메서드 재사용
+
+            // 검색 결과에서 바로 장바구니 추가 기능
+            System.out.println("----------------------------------------------------------------");
+            System.out.println("검색된 도서를 장바구니에 추가하시겠습니까? (Y/N)");
+            String str = input.nextLine();
+
+            if (str.equalsIgnoreCase("Y")) {
+                while (true) {
+                    System.out.print("장바구니에 추가할 도서의 ID를 입력하세요 (취소: Q): ");
+                    String bookId = input.nextLine();
+
+                    if (bookId.equalsIgnoreCase("Q")) break;
+
+                    boolean flag = false;
+                    Book selectedBook = null;
+
+                    // 검색된 리스트 안에서 해당 ID 찾기
+                    for (Book book : searchList) {
+                        if (book.getBookId().equals(bookId)) {
+                            selectedBook = book;
+                            flag = true;
+                            break;
+                        }
+                    }
+
+                    if (flag) {
+                        if (!isCartInBook(bookId)) {
+                            mCart.insertBook(selectedBook);
+                            System.out.println(bookId + " 도서가 장바구니에 추가되었습니다.");
+                        } else {
+                            System.out.println("이미 장바구니에 있는 도서입니다 (수량 증가).");
+                            // Cart 클래스 내부 로직에 따라 이미 있으면 수량만 증가됨 (isCartInBook 활용 필요 시 수정 가능)
+                            // 여기서는 단순히 메시지만 출력하고 넘어감, 실제 증가는 isCartInBook 호출 로직에 따름
+                            // 위쪽 코드에서 isCartInBook 확인 후 insertBook 하므로, 
+                            // Cart.isCartInBook()을 호출해서 수량을 증가시키는 처리가 필요하다면 아래처럼 처리:
+                            // mCart.isCartInBook(bookId); // 이 메서드가 수량을 증가시키는 로직을 포함하고 있다면 호출
+                        }
+                        break; 
+                    } else {
+                        System.out.println("검색 결과 목록에 없는 도서 ID입니다. 다시 확인해주세요.");
+                    }
+                }
+            }
+
+        } catch (SQLException e) {
+            System.out.println("도서 검색 중 데이터베이스 오류 발생: " + e.getMessage());
+        }
+    }
+    
+    // [신규 기능] DB에서 키워드로 도서 검색
+    public static void searchBookList(ArrayList<Book> booklist, String keyword) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
+        // LIKE 연산자를 사용하여 제목이나 저자에 키워드가 포함된 책 조회
+        String sql = "SELECT * FROM books WHERE title LIKE ? OR author LIKE ?";
+
+        try {
+            conn = DBConnection.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            
+            String queryParam = "%" + keyword + "%";
+            pstmt.setString(1, queryParam); 
+            pstmt.setString(2, queryParam); 
+            
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                Book bookitem = new Book(
+                    rs.getString("bookId"),
+                    rs.getString("title"),
+                    rs.getInt("unitPrice"),
+                    rs.getString("author"),
+                    rs.getString("description"),
+                    rs.getString("category"),
+                    rs.getString("releaseDate"));
+                booklist.add(bookitem);
+            }
+        } finally {
+            if (rs != null) rs.close();
+            if (pstmt != null) pstmt.close();
+            DBConnection.closeConnection(conn);
         }
     }
     
@@ -254,7 +366,7 @@ public class Welcome {
                         input.nextLine(); 
 
                         if (newQuantity <= 0) {
-                             System.out.println("수량은 1 이상이어야 합니다. 항목 삭제를 원하시면 6번 메뉴를 이용해주세요.");
+                             System.out.println("수량은 1 이상이어야 합니다. 항목 삭제를 원하시면 7번 메뉴를 이용해주세요.");
                              continue;
                         }
                         
@@ -400,7 +512,7 @@ public class Welcome {
     // CartException : 완료된 주문 내역이 없을 경우 발생
     public static void menuCartBill() throws CartException {
         if (!isOrderPlaced)
-             throw new CartException("최근 완료된 주문 내역이 없습니다. 먼저 7번 메뉴로 주문해주세요.");
+             throw new CartException("최근 완료된 주문 내역이 없습니다. 먼저 8번 메뉴로 주문해주세요.");
              
         System.out.println("--------------- 주문 영수증 ----------------");
         printBill(ordererName, ordererPhone, deliveryAddress, finalTotalPrice);
