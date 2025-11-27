@@ -23,18 +23,18 @@ import com.market.member.User;
 public class Welcome {
 	static final int NUM_BOOK = 3;
 	static final int NUM_ITEM = 7;
-	static Cart mCart = new Cart();
-	static User mUser;
+	public static Cart mCart = new Cart();	// + 추가) CartPanel 접근을 위해 public 추가
+	public static User mUser;				// + 추가) LoginPanel 접근을 위해 public 추가
 	
 	// 주문 및 배송정보
-	static String ordererName = "";
-	static String ordererPhone = "";
-	static String deliveryAddress = "";
+	public static String ordererName = "";			// + 추가) OrderPanel2 접근을 위해 public 추가
+	public static String ordererPhone = "";			// + 추가) OrderPanel2 접근을 위해 public 추가
+	public static String deliveryAddress = "";		// + 추가) OrderPanel2 접근을 위해 public 추가
 	static boolean isOrderPlaced = false; // 주문 완료 여부 확인용
 	
-	static int currentUserId = 0; //DB에서 조회/생성된 현재 사용자 ID 
-    static boolean isCouponApplied = false; //현재 주문에 쿠폰이 적용되었는지 여부
-    static int finalTotalPrice = 0; // 최종 결제 금액(쿠폰 적용 후 금액)        
+	public static int currentUserId = 0; //DB에서 조회/생성된 현재 사용자 ID + 추가) InfoPanel 접근을 위해 public 추가
+    public static boolean isCouponApplied = false; //현재 주문에 쿠폰이 적용되었는지 여부 + 추가) OrderPanel2 접근을 위해 public 추가
+    public static int finalTotalPrice = 0; // 최종 결제 금액(쿠폰 적용 후 금액) + 추가) OrderPanel2 접근을 위해 public 추가      
 
     // 장바구니가 비워진 후에도 영수증을 출력하기 위해 마지막 주문 정보를 저장할 리스트
     static ArrayList<CartItem> lastOrderCartItems = new ArrayList<>();
@@ -235,16 +235,27 @@ public class Welcome {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         
-        // LIKE 연산자를 사용하여 제목이나 저자에 키워드가 포함된 책 조회
-        String sql = "SELECT * FROM books WHERE title LIKE ? OR author LIKE ?";
+        // LIKE 연산자를 사용하여 제목이나 저자에 키워드가 포함된 책 조회 + 다른 항목 검색 시 결과값 출력
+        String sql = 	"SELECT * FROM books WHERE " +
+                		"bookId LIKE ? OR " +
+                		"title LIKE ? OR " +
+                		"author LIKE ? OR " +
+                		"description LIKE ? OR " +
+                		"category LIKE ? OR " +
+                		"releaseDate LIKE ?";
 
         try {
             conn = DBConnection.getConnection();
             pstmt = conn.prepareStatement(sql);
             
-            String queryParam = "%" + keyword + "%";
-            pstmt.setString(1, queryParam); 
-            pstmt.setString(2, queryParam); 
+            String q = "%" + keyword + "%";
+
+            pstmt.setString(1, q);
+            pstmt.setString(2, q);
+            pstmt.setString(3, q);
+            pstmt.setString(4, q);
+            pstmt.setString(5, q);
+            pstmt.setString(6, q);
             
             rs = pstmt.executeQuery();
 
@@ -591,8 +602,8 @@ public class Welcome {
         }
     }
     
-    // 사용자의 주문 횟수를 확인하여 첫 주문인 경우 쿠폰 지급
-    public static void checkAndGrantFirstOrderCoupon(int userId) {
+    // 사용자의 주문 횟수를 확인하여 첫 주문인 경우 쿠폰 지급 +추가) boolean으로 형식 변경하여 쿠폰 지급 여부 반환 확인
+    public static boolean checkAndGrantFirstOrderCoupon(int userId) {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -601,6 +612,7 @@ public class Welcome {
 
         try {
             conn = DBConnection.getConnection();
+            
             // 주문 횟수 조회
             pstmt = conn.prepareStatement(sqlCount);
             pstmt.setInt(1, userId);
@@ -610,20 +622,22 @@ public class Welcome {
             if (rs.next()) {
                 orderCount = rs.getInt(1);
             }
-            // 주문 횟수가 1인 경우에만 쿠폼 지
+            // 주문 횟수가 1인 경우에만 쿠폰 지급
             if (orderCount == 1) {
                 pstmt.close();  // 이전 PreparedStatement 닫기
                 pstmt = conn.prepareStatement(sqlUpdate);
                 pstmt.setInt(1, userId);
                 pstmt.executeUpdate();
-                System.out.println("[축하합니다] 첫 주문 감사 이벤트로 10% 할인 쿠폰이 지급되었습니다! 다음 주문시 사용 가능합니다.");
+                
+                return true;	// 쿠폰 지급
             }
-
         } catch (SQLException e) {
             System.out.println("쿠폰 지급 중 오류: " + e.getMessage());
         } finally {
             DBConnection.closeConnection(conn);
         }
+        
+        return false;	// 쿠폰 지급 실패 
     }
     
     // DB의 books 테이블에 저장된 전체 도서 개수를 조회
@@ -922,4 +936,185 @@ public class Welcome {
             DBConnection.closeConnection(conn);
         }
     }
+    
+    // 주문 횟수 조회
+    public static int getOrderCount(int userId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
+        String sql = "SELECT COUNT(*) FROM orders WHERE user_id = ?";
+
+        try {
+            conn = DBConnection.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, userId);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("주문 횟수 조회 오류: " + e.getMessage());
+        } finally {
+            DBConnection.closeConnection(conn);
+        }
+        return 0;
+    }
+    
+    // 주문 조회 테이블 DTO
+    public static class OrderSummary {
+        public int orderId;
+        public String date;
+        public String address;
+        public int totalPrice;
+
+        public OrderSummary(int orderId, String date, String address, int totalPrice) {
+            this.orderId = orderId;
+            this.date = date;
+            this.address = address;
+            this.totalPrice = totalPrice;
+        }
+    }
+    
+    // 주문 목록 조회
+    public static java.util.List<OrderSummary> getOrderList(int userId) {
+        java.util.List<OrderSummary> list = new java.util.ArrayList<>();
+
+        String sql =
+            "SELECT o.order_id, o.order_date, o.delivery_address, " +
+            "       IFNULL(SUM(oi.quantity * oi.unit_price), 0) AS total_price " +
+            "FROM orders o " +
+            "LEFT JOIN order_items oi ON o.order_id = oi.order_id " +
+            "WHERE o.user_id = ? " +
+            "GROUP BY o.order_id, o.order_date, o.delivery_address " +
+            "ORDER BY o.order_date DESC";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                list.add(new OrderSummary(
+                    rs.getInt("order_id"),
+                    rs.getString("order_date"),
+                    rs.getString("delivery_address"),
+                    rs.getInt("total_price")
+                ));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+    
+    // 주문 상세 내용 DTO
+    public static class OrderDetail {
+        public int orderId;
+        public String orderDate;
+        public String ordererName;
+        public String ordererPhone;
+        public String deliveryAddress;
+        public int totalPrice;
+        
+        public int originalTotal;   // 총 상품 금액
+        public int discount;      // 할인 금액
+        public boolean couponUsed; // 쿠폰 사용 여부
+
+
+        public java.util.List<OrderItemDetail> items = new java.util.ArrayList<>();
+    }
+
+    public static class OrderItemDetail {
+        public String bookId;
+        public int quantity;
+        public int unitPrice;
+
+        public OrderItemDetail(String bookId, int quantity, int unitPrice) {
+            this.bookId = bookId;
+            this.quantity = quantity;
+            this.unitPrice = unitPrice;
+        }
+    }
+    
+    
+    // 특정 주문 상세 조회
+    public static OrderDetail getOrderDetail(int orderId) {
+
+    	OrderDetail d = new OrderDetail();
+        d.orderId = orderId;
+
+        String sql1 =
+            "SELECT order_date, orderer_name, orderer_phone, delivery_address " +
+            "FROM orders WHERE order_id = ?";
+
+        String sql2 =
+            "SELECT book_id, quantity, unit_price " +
+            "FROM order_items WHERE order_id = ?";
+
+        try (Connection conn = DBConnection.getConnection()) {
+
+            // 1) 주문 기본 정보
+            PreparedStatement ps = conn.prepareStatement(sql1);
+            ps.setInt(1, orderId);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                d.orderDate = rs.getString("order_date");
+                d.ordererName = rs.getString("orderer_name");
+                d.ordererPhone = rs.getString("orderer_phone");
+                d.deliveryAddress = rs.getString("delivery_address");
+            }
+
+            // 2) 주문 상품 목록
+            ps = conn.prepareStatement(sql2);
+            ps.setInt(1, orderId);
+            rs = ps.executeQuery();
+
+            int sum = 0;
+            while (rs.next()) {
+                OrderItemDetail item = new OrderItemDetail(
+                        rs.getString("book_id"),
+                        rs.getInt("quantity"),
+                        rs.getInt("unit_price")
+                );
+                d.items.add(item);
+
+                sum += item.quantity * item.unitPrice;
+            }
+
+            // 원래 상품 총 금액
+            d.originalTotal = sum;
+
+            // 주문 당시 적용된 할인 = (sum * 0.1) 인지 검사
+            int possibleDiscount = (int)(sum * 0.1);
+            
+            // 주문액이 sum - possibleDiscount 이면 쿠폰 적용된 것
+            if (Welcome.checkCoupon(Welcome.currentUserId) == false) {
+                // 현재는 쿠폰이 없음 → 최근 주문에서 사용했을 가능성 매우 큼
+                // 그런데 하나의 주문을 볼 때는 정확한 판단 필요
+                // 계산값을 적용
+                d.discount = possibleDiscount;
+                d.couponUsed = (possibleDiscount > 0);
+            } else {
+                d.discount = 0;
+                d.couponUsed = false;
+            }
+
+            d.totalPrice = d.originalTotal - d.discount;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return d;
+    }
+
+
+
 }

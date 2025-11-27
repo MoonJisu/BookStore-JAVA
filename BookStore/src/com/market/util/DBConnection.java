@@ -17,8 +17,8 @@ public class DBConnection {
     // private static final String USER = "jdbc_user";
     
     // DB 패스워드
-    private static final String PASS = "awtwltn7253"; 
-   // private static final String PASS = "rlaskdusdb";
+    private static final String PASS = "root"; 
+   // private static final String PASS = "root;
     
     public static Connection getConnection() throws SQLException {
         Connection conn = null;
