@@ -14,10 +14,9 @@ public class DBConnection {
     
     // DB 사용자 이름
     private static final String USER = "root";
-    // private static final String USER = "jdbc_user";
     
     // DB 패스워드
-    private static final String PASS = "root"; 
+    private static final String PASS = "awtwltn7253";  // 각자 DB password
    // private static final String PASS = "root;
     
     public static Connection getConnection() throws SQLException {
