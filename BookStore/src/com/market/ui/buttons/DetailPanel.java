@@ -7,7 +7,8 @@ import com.market.main.Welcome;
 public class DetailPanel extends JDialog {
 
     public DetailPanel(int orderId) {
-
+    	
+    	// 주문 상세 페이지 설정
         setTitle("주문 상세");
         setSize(400, 750);
         setLocationRelativeTo(null);

@@ -12,6 +12,8 @@ public class MainPanel extends JPanel {
     private OrderPanel orderPanel;
     private BillPanel billPanel;
     private AdminPanel adminPanel;
+    private SearchPanel searchPanel;
+    
     private CardLayout contentCard;
     private JPanel contentArea;
 
@@ -28,8 +30,9 @@ public class MainPanel extends JPanel {
         sidebar.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         sidebar.add(sideButton("고객정보", "INFO"));
-        sidebar.add(sideButton("장바구니", "ITEMLIST"));
         sidebar.add(sideButton("도서목록", "BOOKLIST"));
+        sidebar.add(sideButton("도서검색", "SEARCH"));
+        sidebar.add(sideButton("장바구니", "ITEMLIST"));
         sidebar.add(sideButton("주문하기", "ORDER"));
         sidebar.add(sideButton("구매내역", "BILL"));
         sidebar.add(sideButton("관리자", "ADMIN"));
@@ -86,6 +89,24 @@ public class MainPanel extends JPanel {
                 }
                 contentCard.show(contentArea, "INFO");
                 break;
+                
+            case "BOOKLIST":
+                if (bookPanel == null) {
+                    bookPanel = new BookPanel();
+                    contentArea.add(bookPanel, "BOOKLIST");
+                } else {
+                    bookPanel.refresh();
+                }
+                contentCard.show(contentArea, "BOOKLIST");
+                break;
+                
+            case "SEARCH":
+                if (searchPanel == null) {
+                    searchPanel = new SearchPanel();  // SearchPanel 생성
+                    contentArea.add(searchPanel, "SEARCH");
+                }
+                contentCard.show(contentArea, "SEARCH");
+                break;
 
             case "ITEMLIST":
                 if (cartPanel == null) {
@@ -96,17 +117,7 @@ public class MainPanel extends JPanel {
                 }
                 contentCard.show(contentArea, "ITEMLIST");
                 break;
-
-            case "BOOKLIST":
-                if (bookPanel == null) {
-                    bookPanel = new BookPanel();
-                    contentArea.add(bookPanel, "BOOKLIST");
-                } else {
-                    bookPanel.refresh();
-                }
-                contentCard.show(contentArea, "BOOKLIST");
-                break;
-
+            
             case "ORDER":
                 orderPanel.refreshOrder();
                 contentCard.show(contentArea, "ORDER");
@@ -129,7 +140,17 @@ public class MainPanel extends JPanel {
                 break;
 
             case "EXIT":
-                System.exit(0);
+                int result = JOptionPane.showConfirmDialog(
+                        JOptionPane.getRootFrame(),   // ← this 대신 사용!
+                        "정말 종료하시겠습니까?",
+                        "종료 확인",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE
+                );
+
+                if (result == JOptionPane.YES_OPTION) {
+                    System.exit(0);
+                }
                 break;
         }
     }

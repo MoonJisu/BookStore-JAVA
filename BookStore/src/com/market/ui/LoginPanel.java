@@ -7,11 +7,9 @@ import com.market.member.User;
 
 public class LoginPanel extends JPanel {
 
-    public LoginPanel(MainFrame main) {
+	public LoginPanel(MainFrame main) {
 
         setLayout(new GridBagLayout());
-        
-        //로그인 화면 배경색
         setBackground(new Color(245, 245, 245));
 
         // 카드 박스
@@ -26,48 +24,67 @@ public class LoginPanel extends JPanel {
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
         gbc.insets = new Insets(10, 0, 10, 0);
+        gbc.anchor = GridBagConstraints.CENTER;
 
-        // 제목 필드 설정
+        int y = 0;
+
+
+        // 상단 이미지
+        gbc.gridy = y++;
+        gbc.insets = new Insets(0, 0, 10, 0);
+
+        ImageIcon icon = new ImageIcon("src/com/market/image/Bookstore_Icon.png");
+        Image img = icon.getImage().getScaledInstance(200, 200, Image.SCALE_SMOOTH);
+        JLabel imgLabel = new JLabel(new ImageIcon(img));
+
+        card.add(imgLabel, gbc);
+
+
+        // 제목
+        gbc.gridy = y++;
+        gbc.insets = new Insets(0, 0, 30, 0);
+
         JLabel title = new JLabel("[ 고객 정보를 입력하세요 ]", SwingConstants.CENTER);
         title.setFont(new Font("SansSerif", Font.BOLD, 15));
-
-        gbc.gridy = 0;
-        gbc.ipady = 100;
-        gbc.insets = new Insets(5, 0, 50, 0);
         card.add(title, gbc);
 
-        // 이름 필드 설정
+
+        // 입력칸
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(5, 0, 5, 0);
+
+        
+        // 이름
+        gbc.gridy = y++;
         JTextField username = new JTextField();
         username.putClientProperty("JTextField.placeholderText", "이름을 입력하세요");
-        username.setPreferredSize(new Dimension(250, 40));
-
-        gbc.gridy = 1;
-        gbc.ipady = 10;
-        gbc.insets = new Insets(0, 0, 5, 0);
+        username.setPreferredSize(new Dimension(260, 40));
         card.add(username, gbc);
-
-        // 비밀번호 필드 설정
+        
+        
+        // 전화번호
+        gbc.gridy = y++;
         JTextField phone = new JTextField();
         phone.putClientProperty("JTextField.placeholderText", "전화번호를 입력하세요");
-        phone.setPreferredSize(new Dimension(250, 40));
-
-        gbc.gridy = 2;
-        gbc.ipady = 10;
-        gbc.insets = new Insets(5, 0, 15, 0);
+        phone.setPreferredSize(new Dimension(260, 40));
         card.add(phone, gbc);
 
-        // Sign In Button
+        
+        // 로그인 버튼
+        gbc.gridy = y++;
+        gbc.insets = new Insets(20, 0, 10, 0);
+
         JButton signInBtn = new JButton("확인");
         signInBtn.setForeground(Color.WHITE);
         signInBtn.setBackground(new Color(120, 160, 210));
         signInBtn.setFocusPainted(false);
         signInBtn.setOpaque(true);
         signInBtn.setBorderPainted(false);
-        signInBtn.setPreferredSize(new Dimension(0, 30));
+        signInBtn.setPreferredSize(new Dimension(260, 40));
 
-        gbc.gridy = 3;
-        gbc.ipady = 15;
         card.add(signInBtn, gbc);
         
         
@@ -102,9 +119,7 @@ public class LoginPanel extends JPanel {
                         "입력 오류",
                         JOptionPane.ERROR_MESSAGE);
             }
-        });
-
-	     
+        });	     
 
         // 카드 배치
         add(card);

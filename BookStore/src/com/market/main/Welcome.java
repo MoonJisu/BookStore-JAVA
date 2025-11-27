@@ -235,16 +235,27 @@ public class Welcome {
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         
-        // LIKE 연산자를 사용하여 제목이나 저자에 키워드가 포함된 책 조회
-        String sql = "SELECT * FROM books WHERE title LIKE ? OR author LIKE ?";
+        // LIKE 연산자를 사용하여 제목이나 저자에 키워드가 포함된 책 조회 + 다른 항목 검색 시 결과값 출력
+        String sql = 	"SELECT * FROM books WHERE " +
+                		"bookId LIKE ? OR " +
+                		"title LIKE ? OR " +
+                		"author LIKE ? OR " +
+                		"description LIKE ? OR " +
+                		"category LIKE ? OR " +
+                		"releaseDate LIKE ?";
 
         try {
             conn = DBConnection.getConnection();
             pstmt = conn.prepareStatement(sql);
             
-            String queryParam = "%" + keyword + "%";
-            pstmt.setString(1, queryParam); 
-            pstmt.setString(2, queryParam); 
+            String q = "%" + keyword + "%";
+
+            pstmt.setString(1, q);
+            pstmt.setString(2, q);
+            pstmt.setString(3, q);
+            pstmt.setString(4, q);
+            pstmt.setString(5, q);
+            pstmt.setString(6, q);
             
             rs = pstmt.executeQuery();
 

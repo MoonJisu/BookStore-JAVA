@@ -12,8 +12,6 @@ import com.market.main.Welcome;
 import com.market.util.DBConnection;
 
 
-
-
 public class BookPanel extends DefaultPanel {
     private DefaultTableModel bookItem;
     private JLabel labelImage; 

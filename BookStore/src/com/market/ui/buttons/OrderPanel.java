@@ -8,8 +8,6 @@ import com.market.cart.CartItem;
 import com.market.main.Welcome;
 
 
-
-
 public class OrderPanel extends DefaultPanel {
 	private DefaultTableModel orderItem;
     private JTable table;

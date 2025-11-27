@@ -32,7 +32,7 @@ public class CartPanel extends DefaultPanel {
         
         // titlePanel 설정
         JPanel titlePanel = new JPanel(new BorderLayout());
-        JLabel title = new JLabel("장바구니");	 				// 텍스트 설정    
+        JLabel title = new JLabel("장바구니");	 					// 텍스트 설정    
         title.setFont(new Font("SansSerif", Font.BOLD, 26));	// 폰트 설정
         titlePanel.setOpaque(false);							// 패널 배경 불투명
         titlePanel.add(title, BorderLayout.NORTH);				// 설정 후 패널 생성 (add 먼저하면 위 설정 적용 X)
