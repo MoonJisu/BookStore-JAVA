@@ -3,18 +3,22 @@ package com.market.ui.buttons;
 import javax.swing.*;
 import java.awt.*;
 
-
 public class AdminPanel extends JPanel {
+
+    private JPanel card;          // 로그인 카드
+    private JPanel adminContent;  // 로그인 성공 후 관리자 화면
 
     public AdminPanel() {
 
         setLayout(new GridBagLayout());
-        
-        //로그인 화면 배경색
         setBackground(new Color(245, 245, 245));
 
-        // 카드 박스
-        JPanel card = new JPanel();
+        buildLoginUI();  // 로그인 UI 생성
+    }
+
+    private void buildLoginUI() {
+
+        card = new JPanel();
         card.setBackground(Color.WHITE);
         card.setPreferredSize(new Dimension(600, 500));
         card.setLayout(new GridBagLayout());
@@ -27,37 +31,36 @@ public class AdminPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(10, 0, 10, 0);
 
-        // 제목 필드 설정
+        // 제목
         JLabel title = new JLabel("[ 관리자 계정으로 로그인하세요 ]", SwingConstants.CENTER);
-        title.setFont(new Font("SansSerif", Font.BOLD, 15));
+        title.setFont(new Font("SansSerif", Font.BOLD, 17));
 
         gbc.gridy = 0;
         gbc.ipady = 100;
         gbc.insets = new Insets(5, 0, 50, 0);
         card.add(title, gbc);
 
-        // 이름 필드 설정
-        JTextField username = new JTextField();
-        username.putClientProperty("JTextField.placeholderText", "이름을 입력하세요");
-        username.setPreferredSize(new Dimension(250, 40));
+        // 사용자 입력
+        JTextField txtId = new JTextField();
+        txtId.putClientProperty("JTextField.placeholderText", "아이디를 입력하세요");
+        txtId.setPreferredSize(new Dimension(250, 40));
 
         gbc.gridy = 1;
         gbc.ipady = 10;
         gbc.insets = new Insets(0, 0, 5, 0);
-        card.add(username, gbc);
+        card.add(txtId, gbc);
 
-        // 비밀번호 필드 설정
-        JTextField phone = new JTextField();
-        phone.putClientProperty("JTextField.placeholderText", "전화번호를 입력하세요");
-        phone.setPreferredSize(new Dimension(250, 40));
+        // 비밀번호 입력
+        JPasswordField txtPw = new JPasswordField();
+        txtPw.putClientProperty("JTextField.placeholderText", "비밀번호를 입력하세요");
+        txtPw.setPreferredSize(new Dimension(250, 40));
 
         gbc.gridy = 2;
-        gbc.ipady = 10;
         gbc.insets = new Insets(5, 0, 15, 0);
-        card.add(phone, gbc);
+        card.add(txtPw, gbc);
 
-        // Sign In Button
-        JButton signInBtn = new JButton("확인");
+        // 로그인 버튼
+        JButton signInBtn = new JButton("로그인");
         signInBtn.setForeground(Color.WHITE);
         signInBtn.setBackground(new Color(120, 160, 210));
         signInBtn.setFocusPainted(false);
@@ -68,34 +71,46 @@ public class AdminPanel extends JPanel {
         gbc.gridy = 3;
         gbc.ipady = 15;
         card.add(signInBtn, gbc);
-        
-        
-        // 버튼 클릭시
-        signInBtn.addActionListener(e -> {
-            String name = username.getText();
-            String phoneStr = phone.getText();
 
-            if (name.isEmpty() || phoneStr.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "이름과 전화번호를 입력하세요.", "입력 오류", JOptionPane.WARNING_MESSAGE);
+        // 이벤트
+        signInBtn.addActionListener(e -> {
+            String id = txtId.getText().trim();
+            String pw = new String(txtPw.getPassword()).trim();
+
+            if (id.isEmpty() || pw.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "아이디와 비밀번호를 입력하세요.",
+                        "입력 오류",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            try {
-                int phoneNum = Integer.parseInt(phoneStr);
+            // 관리자 계정 확인 (하드코딩 or DB)
+            if (id.equals("admin") && pw.equals("admin1234")) {
+                JOptionPane.showMessageDialog(this, "관리자 로그인 성공!");
 
-
-
-            } catch (NumberFormatException ex) {
+                showAdminManager();  // 관리자 화면으로 전환
+            } else {
                 JOptionPane.showMessageDialog(this,
-                        "전화번호는 숫자만 입력해야 합니다.",
-                        "입력 오류",
+                        "아이디 또는 비밀번호가 틀렸습니다.",
+                        "로그인 실패",
                         JOptionPane.ERROR_MESSAGE);
             }
         });
 
-	     
-
-        // 카드 배치
         add(card);
+    }
+
+    /** ▼▼▼ 로그인 성공 시 관리자 패널 보여주는 메소드 ▼▼▼ */
+    private void showAdminManager() {
+
+        removeAll();  // 로그인 화면 삭제
+        setLayout(new BorderLayout());
+
+        adminContent = new AddBookPanel();  // 책 등록 화면
+        add(adminContent, BorderLayout.CENTER);
+
+        revalidate();
+        repaint();
     }
 }
