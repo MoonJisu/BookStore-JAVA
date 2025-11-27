@@ -11,7 +11,7 @@ public class InfoPanel extends DefaultPanel {
 
     public InfoPanel() {
     	// InfoPanel 설정
-        JPanel card = createCard(740, 550);   
+        JPanel card = createCard(800, 600);   
         card.setOpaque(true);	// 패널 배경 불투명 (설정 후 배경색 지정 가능)
         card.setBackground(new Color(255, 255, 255));
         card.setLayout(new BorderLayout());	// 편의를 위해 제목 영역인 titlePanel과 정보 영역인 mainPanel로 나눠서 설정

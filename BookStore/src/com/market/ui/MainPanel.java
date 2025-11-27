@@ -18,8 +18,9 @@ public class MainPanel extends JPanel {
     public MainPanel(MainFrame main) {
         setLayout(new BorderLayout());
         setBackground(new Color(245, 247, 250));
+        
 
-        // ■ 사이드 메뉴 버튼
+        // 메뉴 버튼
         JPanel sidebar = new JPanel();
         sidebar.setPreferredSize(new Dimension(130, 700));
         sidebar.setBackground(Color.WHITE);
@@ -28,10 +29,7 @@ public class MainPanel extends JPanel {
 
         sidebar.add(sideButton("고객정보", "INFO"));
         sidebar.add(sideButton("장바구니", "ITEMLIST"));
-        //sidebar.add(sideButton("비우기", "CLEAR"));
         sidebar.add(sideButton("도서목록", "BOOKLIST"));
-        //sidebar.add(sideButton("수량변경", "EDIT"));
-        //sidebar.add(sideButton("항목삭제", "REMOVE"));
         sidebar.add(sideButton("주문하기", "ORDER"));
         sidebar.add(sideButton("구매내역", "BILL"));
         sidebar.add(sideButton("관리자", "ADMIN"));
@@ -45,17 +43,20 @@ public class MainPanel extends JPanel {
         contentArea = new JPanel(contentCard);
         contentArea.setBackground(new Color(245, 247, 250));
 
-        // 초기 기본 화면만 먼저 등록
+        // 초기 기본
         contentArea.add(defaultPage(), "DEFAULT");
-
+        
+        // 실행 직후 장바구니에서 주문 시 실행 안되는 현상 해결을 위해 미리 OrderPanel 생성
+        orderPanel = new OrderPanel();
+        contentArea.add(orderPanel, "ORDER");
+        
         add(contentArea, BorderLayout.CENTER);
 
-        // 최초 보여줄 화면
         contentCard.show(contentArea, "DEFAULT");
     }
 
 
-    // ■ 버튼 생성 헬퍼
+    // 버튼 생성
     private JButton sideButton(String text, String action) {
         JButton btn = new JButton(text);
 
@@ -66,13 +67,13 @@ public class MainPanel extends JPanel {
         btn.setBorderPainted(false);
         btn.setFont(new Font("SansSerif", Font.BOLD, 14));
 
-        btn.addActionListener(e -> handleAction(action));
+        btn.addActionListener(e -> Buttons(action));
         return btn;
     }
 
 
-    // ■ 버튼 클릭 시 실행되는 동작
-    private void handleAction(String action) {
+    // 버튼 동작 설정
+    private void Buttons(String action) {
 
         switch (action) {
 
@@ -81,14 +82,14 @@ public class MainPanel extends JPanel {
                     infoPanel = new InfoPanel();
                     contentArea.add(infoPanel, "INFO");
                 } else {
-                    infoPanel.reload(); // ← 로그인 정보 다시 불러오기 가능
+                    infoPanel.reload();
                 }
                 contentCard.show(contentArea, "INFO");
                 break;
 
             case "ITEMLIST":
                 if (cartPanel == null) {
-                    cartPanel = new CartPanel();
+                	cartPanel = new CartPanel(this);
                     contentArea.add(cartPanel, "ITEMLIST");
                 } else {
                     cartPanel.refresh(); 
@@ -107,10 +108,7 @@ public class MainPanel extends JPanel {
                 break;
 
             case "ORDER":
-                if (orderPanel == null) {
-                    orderPanel = new OrderPanel();
-                    contentArea.add(orderPanel, "ORDER");
-                }
+                orderPanel.refreshOrder();
                 contentCard.show(contentArea, "ORDER");
                 break;
 
@@ -130,18 +128,26 @@ public class MainPanel extends JPanel {
                 contentCard.show(contentArea, "ADMIN");
                 break;
 
-//            case "CLEAR":
-//                JOptionPane.showMessageDialog(this, "장바구니 비우기 기능은 UI 패널에서 구현하세요.");
-//                break;
-
             case "EXIT":
                 System.exit(0);
                 break;
         }
     }
+    
+    
+    // 패널에서 패널로 전환
+    public void showPage(String page) {
+        contentCard.show(contentArea, page);
+    }
+    
+    public void refreshOrderPanel() {
+        if (orderPanel != null) {
+            orderPanel.refreshOrder();
+        }
+    }
 
 
-    // ■ 기본 페이지
+    // 기본 페이지
     private JPanel defaultPage() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(new Color(245, 247, 250));

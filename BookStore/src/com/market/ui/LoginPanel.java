@@ -17,7 +17,7 @@ public class LoginPanel extends JPanel {
         // 카드 박스
         JPanel card = new JPanel();
         card.setBackground(Color.WHITE);
-        card.setPreferredSize(new Dimension(600, 500));
+        card.setPreferredSize(new Dimension(700, 550));
         card.setLayout(new GridBagLayout());
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(230, 230, 230), 1, true),

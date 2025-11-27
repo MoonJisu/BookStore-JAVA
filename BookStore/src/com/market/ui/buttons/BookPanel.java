@@ -21,7 +21,7 @@ public class BookPanel extends DefaultPanel {
     public BookPanel() {
 
     	// BookPanel 설정
-        JPanel card = createCard(740, 550);   
+        JPanel card = createCard(800, 600);   
         card.setOpaque(true);	// 패널 배경 불투명 (설정 후 배경색 지정 가능)
         card.setBackground(new Color(255, 255, 255));
         card.setLayout(new BorderLayout());
@@ -74,7 +74,7 @@ public class BookPanel extends DefaultPanel {
         table.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 15));
 
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setPreferredSize(new Dimension(500, 400));
+        scrollPane.setPreferredSize(new Dimension(550, 400));
 
         gbc.gridx = 1;
         gbc.gridy = 0;

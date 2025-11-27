@@ -27,14 +27,14 @@ public class Welcome {
 	public static User mUser;				// + 추가) LoginPanel 접근을 위해 public 추가
 	
 	// 주문 및 배송정보
-	static String ordererName = "";
-	static String ordererPhone = "";
-	static String deliveryAddress = "";
+	public static String ordererName = "";			// + 추가) OrderPanel2 접근을 위해 public 추가
+	public static String ordererPhone = "";			// + 추가) OrderPanel2 접근을 위해 public 추가
+	public static String deliveryAddress = "";		// + 추가) OrderPanel2 접근을 위해 public 추가
 	static boolean isOrderPlaced = false; // 주문 완료 여부 확인용
 	
 	public static int currentUserId = 0; //DB에서 조회/생성된 현재 사용자 ID + 추가) InfoPanel 접근을 위해 public 추가
-    static boolean isCouponApplied = false; //현재 주문에 쿠폰이 적용되었는지 여부
-    static int finalTotalPrice = 0; // 최종 결제 금액(쿠폰 적용 후 금액)        
+    public static boolean isCouponApplied = false; //현재 주문에 쿠폰이 적용되었는지 여부 + 추가) OrderPanel2 접근을 위해 public 추가
+    public static int finalTotalPrice = 0; // 최종 결제 금액(쿠폰 적용 후 금액) + 추가) OrderPanel2 접근을 위해 public 추가      
 
     // 장바구니가 비워진 후에도 영수증을 출력하기 위해 마지막 주문 정보를 저장할 리스트
     static ArrayList<CartItem> lastOrderCartItems = new ArrayList<>();
@@ -591,8 +591,8 @@ public class Welcome {
         }
     }
     
-    // 사용자의 주문 횟수를 확인하여 첫 주문인 경우 쿠폰 지급
-    public static void checkAndGrantFirstOrderCoupon(int userId) {
+    // 사용자의 주문 횟수를 확인하여 첫 주문인 경우 쿠폰 지급 +추가) boolean으로 형식 변경하여 쿠폰 지급 여부 반환 확인
+    public static boolean checkAndGrantFirstOrderCoupon(int userId) {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -601,6 +601,7 @@ public class Welcome {
 
         try {
             conn = DBConnection.getConnection();
+            
             // 주문 횟수 조회
             pstmt = conn.prepareStatement(sqlCount);
             pstmt.setInt(1, userId);
@@ -610,20 +611,22 @@ public class Welcome {
             if (rs.next()) {
                 orderCount = rs.getInt(1);
             }
-            // 주문 횟수가 1인 경우에만 쿠폼 지
+            // 주문 횟수가 1인 경우에만 쿠폰 지급
             if (orderCount == 1) {
                 pstmt.close();  // 이전 PreparedStatement 닫기
                 pstmt = conn.prepareStatement(sqlUpdate);
                 pstmt.setInt(1, userId);
                 pstmt.executeUpdate();
-                System.out.println("[축하합니다] 첫 주문 감사 이벤트로 10% 할인 쿠폰이 지급되었습니다! 다음 주문시 사용 가능합니다.");
+                
+                return true;	// 쿠폰 지급
             }
-
         } catch (SQLException e) {
             System.out.println("쿠폰 지급 중 오류: " + e.getMessage());
         } finally {
             DBConnection.closeConnection(conn);
         }
+        
+        return false;	// 쿠폰 지급 실패 
     }
     
     // DB의 books 테이블에 저장된 전체 도서 개수를 조회
@@ -921,5 +924,31 @@ public class Welcome {
             if (pstmtItem != null) pstmtItem.close();
             DBConnection.closeConnection(conn);
         }
+    }
+    
+    // 주문 횟수 조회
+    public static int getOrderCount(int userId) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        
+        String sql = "SELECT COUNT(*) FROM orders WHERE user_id = ?";
+
+        try {
+            conn = DBConnection.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, userId);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("주문 횟수 조회 오류: " + e.getMessage());
+        } finally {
+            DBConnection.closeConnection(conn);
+        }
+        return 0;
     }
 }

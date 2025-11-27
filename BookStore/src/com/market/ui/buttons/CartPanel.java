@@ -8,6 +8,7 @@ import java.awt.event.*;
 
 import com.market.cart.CartItem;
 import com.market.main.Welcome;
+import com.market.ui.MainPanel;
 import com.market.util.DBConnection;
 
 
@@ -17,11 +18,13 @@ public class CartPanel extends DefaultPanel {
     private JTable table;
     private JLabel labelImage;
     private JLabel totalCost;
+    private MainPanel main;
 
-    public CartPanel() {
+    public CartPanel(MainPanel main) {
+    	this.main = main;
 
         // CartPanel 설정
-        JPanel card = createCard(740, 550);
+        JPanel card = createCard(800, 600);
         card.setOpaque(true);	// 패널 배경 불투명 (설정 후 배경색 지정 가능)
         card.setBackground(new Color(255, 255, 255));
         card.setLayout(new BorderLayout());
@@ -129,7 +132,7 @@ public class CartPanel extends DefaultPanel {
         table.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 15));
 
         JScrollPane scroll = new JScrollPane(table);
-        scroll.setPreferredSize(new Dimension(500, 400));
+        scroll.setPreferredSize(new Dimension(550, 400));
 
         gbc.gridx = 1;
         gbc.gridy = 0;
@@ -154,10 +157,18 @@ public class CartPanel extends DefaultPanel {
         JButton btnRemove = new JButton("선택 삭제");
         JButton btnClear = new JButton("전체 비우기");
         JButton btnOrder = new JButton("주문하기");
+     
+        
+        // 주문하기 버튼 클릭 시 OrderPanel로 이동
+        btnOrder.addActionListener(e -> {
+            main.refreshOrderPanel();
+            main.showPage("ORDER");
+        });
 
         btnRemove.setPreferredSize(new Dimension(130, 30));
         btnClear.setPreferredSize(new Dimension(130, 30));
         btnOrder.setPreferredSize(new Dimension(130, 30));
+        
 
         JPanel bottomPanel = new JPanel();
         bottomPanel.setOpaque(false);
@@ -193,7 +204,6 @@ public class CartPanel extends DefaultPanel {
         // 버튼 이벤트
         btnRemove.addActionListener(e -> removeSelectedItem());
         btnClear.addActionListener(e -> clearCart());
-        btnOrder.addActionListener(e -> order());
     }
 
     
@@ -287,12 +297,5 @@ public class CartPanel extends DefaultPanel {
         Welcome.mCart.deleteBook();
         refresh();
         resetImage();
-    }
-
-    
-    // 주문
-    private void order() {
-        // 기존 Welcome.java의 주문 로직 자동 실행
-        JOptionPane.showMessageDialog(this, "주문 기능은 콘솔 / GUI 통합 중입니다.\nWelcome의 menuOrder()를 GUI 버튼으로 연결 예정!");
     }
 }
