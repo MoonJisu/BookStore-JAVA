@@ -3,70 +3,86 @@ package com.market.ui.buttons;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.*;
 
+import com.market.main.Welcome;
+import java.util.List;
 
 public class BillPanel extends DefaultPanel {
 
+    private JTable table;
+    private DefaultTableModel model;
+    private JButton btnView;
+
     public BillPanel() {
 
-    	// BookPanel 설정
-        JPanel card = createCard(740, 550);   
-        card.setOpaque(true);	// 패널 배경 불투명 (설정 후 배경색 지정 가능)
-        card.setBackground(new Color(255, 255, 255));
+    	// 주문 조회 설정
+        JPanel card = createCard(800, 600);
         card.setLayout(new BorderLayout());
-         
-        // titlePanel 설정
-        JPanel titlePanel = new JPanel(new BorderLayout());
-        JLabel title = new JLabel("내역");	 					// 텍스트 설정    
-        title.setFont(new Font("SansSerif", Font.BOLD, 26));	// 폰트 설정
-        titlePanel.setOpaque(false);							// 패널 배경 불투명
-        titlePanel.add(title, BorderLayout.NORTH);				// 설정 후 패널 생성 (add 먼저하면 위 설정 적용 X)
+        card.setBackground(Color.WHITE);
 
+        JLabel title = new JLabel("구매 내역");
+        title.setFont(new Font("SansSerif", Font.BOLD, 26));
 
-        JPanel mainPanel = new JPanel(new GridBagLayout());
-        mainPanel.setOpaque(false);
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        titlePanel.setOpaque(false);
+        titlePanel.add(title);
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 0, 0, 0);
-        gbc.anchor = GridBagConstraints.CENTER;
+        // 테이블
+        model = new DefaultTableModel(new String[]{
+                "주문번호", "주문날짜", "배송지", "총 금액"
+        }, 0);
 
+        table = new JTable(model);
+        table.setRowHeight(25);
 
-        // 도서 목록 테이블
-        String[] tableHeader = {"도서ID", "도서명", "저자", "설명", "분야", "출판일", "가격", "쿠폰"};
-        
-        Object[][] data = {
-        		
-        };
+        JScrollPane scroll = new JScrollPane(table);
 
-        DefaultTableModel model = new DefaultTableModel(data, tableHeader);
-        JTable table = new JTable(model);
+        // 조회 버튼
+        btnView = new JButton("조회하기");
+        btnView.setFont(new Font("SansSerif", Font.BOLD, 16));
+        btnView.addActionListener(e -> openDetail());
 
-        table.setRowHeight(28);
-        table.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        table.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 15));
+        JPanel bottom = new JPanel();
+        bottom.add(btnView);
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setPreferredSize(new Dimension(600, 300));
+        // 배치
+        card.add(titlePanel, BorderLayout.NORTH);
+        card.add(scroll, BorderLayout.CENTER);
+        card.add(bottom, BorderLayout.SOUTH);
 
-        gbc.gridx = 1;
-        gbc.gridy = 0;
-        mainPanel.add(scrollPane, gbc);
-        
-        
-        JButton orderBtn = new JButton("조회");
-        orderBtn.setFont(new Font("SansSerif", Font.BOLD, 15));
-        orderBtn.setPreferredSize(new Dimension(150, 30));
-
-        // 아래쪽 패널에 버튼을 하나 넣기
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setOpaque(false);
-        bottomPanel.add(orderBtn);
-
-        card.add(titlePanel, BorderLayout.WEST);
-        card.add(mainPanel, BorderLayout.CENTER);
-        card.add(bottomPanel, BorderLayout.SOUTH);
-        
         setLayout(new GridBagLayout());
         add(card);
+
+        refresh();
+    }
+
+    public void refresh() {
+        model.setRowCount(0);
+
+        List<Welcome.OrderSummary> list =
+                Welcome.getOrderList(Welcome.currentUserId);
+
+        for (Welcome.OrderSummary s : list) {
+            model.addRow(new Object[]{
+                    s.orderId,
+                    s.date,
+                    s.address,
+                    s.totalPrice + "원"
+            });
+        }
+    }
+
+    private void openDetail() {
+
+        int row = table.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "주문을 선택하세요");
+            return;
+        }
+
+        int orderId = (int) table.getValueAt(row, 0);
+
+        new DetailPanel(orderId).setVisible(true);
     }
 }

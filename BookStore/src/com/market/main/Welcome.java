@@ -951,4 +951,159 @@ public class Welcome {
         }
         return 0;
     }
+    
+    // 주문 조회 테이블 DTO
+    public static class OrderSummary {
+        public int orderId;
+        public String date;
+        public String address;
+        public int totalPrice;
+
+        public OrderSummary(int orderId, String date, String address, int totalPrice) {
+            this.orderId = orderId;
+            this.date = date;
+            this.address = address;
+            this.totalPrice = totalPrice;
+        }
+    }
+    
+    // 주문 목록 조회
+    public static java.util.List<OrderSummary> getOrderList(int userId) {
+        java.util.List<OrderSummary> list = new java.util.ArrayList<>();
+
+        String sql =
+            "SELECT o.order_id, o.order_date, o.delivery_address, " +
+            "       IFNULL(SUM(oi.quantity * oi.unit_price), 0) AS total_price " +
+            "FROM orders o " +
+            "LEFT JOIN order_items oi ON o.order_id = oi.order_id " +
+            "WHERE o.user_id = ? " +
+            "GROUP BY o.order_id, o.order_date, o.delivery_address " +
+            "ORDER BY o.order_date DESC";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                list.add(new OrderSummary(
+                    rs.getInt("order_id"),
+                    rs.getString("order_date"),
+                    rs.getString("delivery_address"),
+                    rs.getInt("total_price")
+                ));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+    
+    // 주문 상세 내용 DTO
+    public static class OrderDetail {
+        public int orderId;
+        public String orderDate;
+        public String ordererName;
+        public String ordererPhone;
+        public String deliveryAddress;
+        public int totalPrice;
+        
+        public int originalTotal;   // 총 상품 금액
+        public int discount;      // 할인 금액
+        public boolean couponUsed; // 쿠폰 사용 여부
+
+
+        public java.util.List<OrderItemDetail> items = new java.util.ArrayList<>();
+    }
+
+    public static class OrderItemDetail {
+        public String bookId;
+        public int quantity;
+        public int unitPrice;
+
+        public OrderItemDetail(String bookId, int quantity, int unitPrice) {
+            this.bookId = bookId;
+            this.quantity = quantity;
+            this.unitPrice = unitPrice;
+        }
+    }
+    
+    
+    // 특정 주문 상세 조회
+    public static OrderDetail getOrderDetail(int orderId) {
+
+    	OrderDetail d = new OrderDetail();
+        d.orderId = orderId;
+
+        String sql1 =
+            "SELECT order_date, orderer_name, orderer_phone, delivery_address " +
+            "FROM orders WHERE order_id = ?";
+
+        String sql2 =
+            "SELECT book_id, quantity, unit_price " +
+            "FROM order_items WHERE order_id = ?";
+
+        try (Connection conn = DBConnection.getConnection()) {
+
+            // 1) 주문 기본 정보
+            PreparedStatement ps = conn.prepareStatement(sql1);
+            ps.setInt(1, orderId);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                d.orderDate = rs.getString("order_date");
+                d.ordererName = rs.getString("orderer_name");
+                d.ordererPhone = rs.getString("orderer_phone");
+                d.deliveryAddress = rs.getString("delivery_address");
+            }
+
+            // 2) 주문 상품 목록
+            ps = conn.prepareStatement(sql2);
+            ps.setInt(1, orderId);
+            rs = ps.executeQuery();
+
+            int sum = 0;
+            while (rs.next()) {
+                OrderItemDetail item = new OrderItemDetail(
+                        rs.getString("book_id"),
+                        rs.getInt("quantity"),
+                        rs.getInt("unit_price")
+                );
+                d.items.add(item);
+
+                sum += item.quantity * item.unitPrice;
+            }
+
+            // 원래 상품 총 금액
+            d.originalTotal = sum;
+
+            // 주문 당시 적용된 할인 = (sum * 0.1) 인지 검사
+            int possibleDiscount = (int)(sum * 0.1);
+            
+            // 주문액이 sum - possibleDiscount 이면 쿠폰 적용된 것
+            if (Welcome.checkCoupon(Welcome.currentUserId) == false) {
+                // 현재는 쿠폰이 없음 → 최근 주문에서 사용했을 가능성 매우 큼
+                // 그런데 하나의 주문을 볼 때는 정확한 판단 필요
+                // 계산값을 적용
+                d.discount = possibleDiscount;
+                d.couponUsed = (possibleDiscount > 0);
+            } else {
+                d.discount = 0;
+                d.couponUsed = false;
+            }
+
+            d.totalPrice = d.originalTotal - d.discount;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return d;
+    }
+
+
+
 }

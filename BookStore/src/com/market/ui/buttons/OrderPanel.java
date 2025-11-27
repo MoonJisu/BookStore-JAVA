@@ -40,7 +40,7 @@ public class OrderPanel extends DefaultPanel {
 
 
         // 결제 목록 테이블
-        String[] tableheader = {"도서ID", "도서명", "저자", "설명", "분야"};
+        String[] tableheader = {"도서ID", "도서명", "수량", "가격", "총 액수"};
         
         orderItem = new DefaultTableModel(tableheader, 0) {
             @Override
