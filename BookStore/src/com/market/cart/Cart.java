@@ -12,7 +12,7 @@ public class Cart implements CartInterface {
 	public Cart() {
 
 	}
-
+	
 	public void printBookList(ArrayList<Book> booklist) {
 		System.out.println("----------------------------------------------------------------");
 		System.out.println("ID | 도서명 | 가격 | 저자 | 설명 | 분야 | 출판일");
@@ -87,7 +87,6 @@ public class Cart implements CartInterface {
 		mCartCount = mCartItem.size();
 	}
 	
-	// 추가된 기능: 장바구니 항목 인덱스 찾기
 	public int getCartItemIndex(String bookId) {
         for (int i = 0; i < mCartItem.size(); i++) {
             if (bookId.equals(mCartItem.get(i).getBookID())) {
@@ -97,7 +96,6 @@ public class Cart implements CartInterface {
         return -1;
     }
 
-	// 추가된 기능: 장바구니 항목 수량 변경
 	public void setCartItemQuantity(int index, int quantity) {
         if (index >= 0 && index < mCartItem.size()) {
             mCartItem.get(index).setQuantity(quantity);

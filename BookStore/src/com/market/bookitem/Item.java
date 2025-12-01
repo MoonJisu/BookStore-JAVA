@@ -3,7 +3,7 @@ package com.market.bookitem;
 public abstract class Item  {
 	String bookId; 	
 	String name; 	
-	 int unitPrice; 
+	int unitPrice; 
 	
 
 	public Item(String bookId, String name, int unitPrice) {

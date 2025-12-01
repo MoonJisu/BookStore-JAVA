@@ -134,7 +134,7 @@ public class OrderPanel2 extends JDialog {
 
         gbc.gridx = 1;
         
-        // DB에서 쿠폰 여부 확인
+        // DB에서 쿠폰 여부 확인 (Welcome의 래퍼 메서드 호출)
         boolean hasCoupon = Welcome.checkCoupon(Welcome.currentUserId);
 
         if (hasCoupon) {
@@ -284,11 +284,11 @@ public class OrderPanel2 extends JDialog {
         Welcome.deliveryAddress = address;
 
 
-        // 주문 전 주문 수 확인
+        // 주문 전 주문 수 확인 (Welcome의 래퍼 메서드 호출)
         int previousOrderCount = Welcome.getOrderCount(Welcome.currentUserId);
 
 
-        // 쿠폰 사용 처리
+        // 쿠폰 사용 처리 (Welcome의 래퍼 메서드 호출)
         boolean hasCoupon = Welcome.checkCoupon(Welcome.currentUserId);
 
         if (hasCoupon && coupon.isEnabled() &&
@@ -303,7 +303,7 @@ public class OrderPanel2 extends JDialog {
         }
 
         
-        // 주문 DB 저장
+        // 주문 DB 저장 (Welcome의 래퍼 메서드 호출 - DAO 호출)
         try {
             Welcome.insertOrderToDB();
         } catch (Exception e) {
@@ -312,7 +312,7 @@ public class OrderPanel2 extends JDialog {
         }
 
         
-        // 첫 주문이라면 쿠폰 지급
+        // 첫 주문이라면 쿠폰 지급 (Welcome의 래퍼 메서드 호출)
         if (previousOrderCount == 0) {
 
             boolean granted = Welcome.checkAndGrantFirstOrderCoupon(Welcome.currentUserId);
