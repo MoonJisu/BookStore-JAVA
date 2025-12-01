@@ -90,35 +90,35 @@ public class Welcome {
 					case 1: // 고객 정보 확인
 						menuGuestInfo(userName, userMobile);
 						break;
-                    case 2: // [신규] 도서 검색 기능
+                    case 2: // 도서 검색 기능
                         menuSearchBook();
                         break;
-					case 3: // [기존 2번] 장바구니 목록 보기
+					case 3: // 장바구니 목록 보기
 						menuCartItemList();
 						break;	
-					case 4: // [기존 3번] 장바구니 비우기
+					case 4: // 장바구니 비우기
 						menuCartClear();
 						break;
-					case 5: // [기존 4번] 장바구니 항목 추가
+					case 5: // 장바구니 항목 추가
 						mBookList = new ArrayList<Book>();
 						menuCartAddItem(mBookList); // DB에서 목록 로드 (DAO 호출)
 						break;
-					case 6: // [기존 5번] 장바구니 수량 변경
+					case 6: // 장바구니 수량 변경
 						menuCartEditQuantity();
 						break;
-					case 7: // [기존 6번] 장바구니 항목 삭제
+					case 7: // 장바구니 항목 삭제
 						menuCartRemoveItem();
 						break;	
-					case 8: // [기존 7번] 주문 처리
+					case 8: // 주문 처리
 						menuOrder();
 						break;
-					case 9: // [기존 8번] 영수증 보기
+					case 9: // 영수증 보기
 						menuCartBill();
 						break;
-					case 10: // [기존 9번] 관리자 로그인
+					case 10: // 관리자 로그인
 						menuAdminLogin();
 						break;
-					case 11: // [기존 10번] 프로그램 종료
+					case 11: // 프로그램 종료
 						menuExit();
 						quit = true;
 						break;	
@@ -160,7 +160,7 @@ public class Welcome {
         }
     }
 
-    // [신규 기능] 도서 검색 메뉴 처리
+    // 도서 검색 메뉴 처리
     public static void menuSearchBook() {
         Scanner input = new Scanner(System.in);
         System.out.print("검색할 도서의 제목 또는 저자를 입력하세요: ");
